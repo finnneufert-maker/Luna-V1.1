@@ -39,7 +39,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
         TextView title = text("Luna  •  Version 1.0", 25); root.addView(title);
         ImageView portrait = new ImageView(this); portrait.setImageResource(R.drawable.luna_maid);
-        portrait.setScaleType(ImageView.ScaleType.CENTER_CROP); root.addView(portrait, new LinearLayout.LayoutParams(-1,dp(280)));
+        portrait.setScaleType(ImageView.ScaleType.FIT_CENTER); portrait.setAdjustViewBounds(true);
+        portrait.setBackgroundColor(Color.rgb(23,19,38)); root.addView(portrait, new LinearLayout.LayoutParams(-1,dp(420)));
 
         answer = text("Hallo! Ich kann sprechen, deine Notizen beantworten und Berichtsheft-Einträge lokal speichern.", 17);
         answer.setPadding(dp(14),dp(14),dp(14),dp(14)); answer.setBackgroundColor(Color.rgb(38,32,58)); root.addView(answer);
@@ -53,6 +54,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.addView(button("💾 Berichtsheft als Textdatei exportieren", v -> exportReports()));
         root.addView(button("🐾 Luna über anderen Apps anzeigen", v -> startOverlay()));
         root.addView(button("🎭 Lunas Posen testen", v -> showPosePicker()));
+        root.addView(button("🐱 Chibi-Reaktionen ansehen", v -> showReactionPicker()));
         root.addView(button("Luna vom Bildschirm entfernen", v -> stopService(new Intent(this, OverlayService.class))));
 
         TextView safety = text("Datenschutz: Version 1 speichert Berichtsheft-Einträge nur lokal. Sie versendet keine Nachrichten und führt keine Finanzgeschäfte aus.", 13);
@@ -68,7 +70,15 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         else if (low.contains("datum") || low.contains("welcher tag")) r = "Heute ist der " + new SimpleDateFormat("dd. MMMM yyyy", Locale.GERMANY).format(new Date()) + ".";
         else if (low.contains("berichtsheft") && (low.contains("zeigen") || low.contains("öffnen"))) { showReports(); return; }
         else if (low.contains("was kannst du")) r = "Ich kann Sprache erkennen, antworten, Texte vorlesen, Berichtsheft-Einträge speichern und als Bildschirmfigur erscheinen.";
-        else r = "Ich habe verstanden: „" + s + "“. In Version 1 beantworte ich einfache Fragen lokal. Die erweiterte KI kommt in einem späteren Update.";
+        else if(AiClient.isConfigured()) {
+            answer.setText("Ich denke darüber nach …");
+            AiClient.ask(s,new AiClient.Callback(){
+                public void onSuccess(String result){runOnUiThread(()->{answer.setText(result);speak(result);});}
+                public void onError(String message){runOnUiThread(()->{answer.setText(message);setLunaState("idle");});}
+            });
+            return;
+        }
+        else r = "Die Online-KI ist noch nicht eingerichtet. Lokale Funktionen wie Berichtsheft, Sprache und Notizen funktionieren weiterhin.";
         answer.setText(r); speak(r);
     }
 
@@ -130,6 +140,19 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         String[] labels={"Stehen","Zuhören","Denken","Sprechen","Winken","Sitzen","Verbeugen","Schlafen"};
         String[] states={"idle","listening","thinking","talking","wave","sitting","bowing","sleeping"};
         new AlertDialog.Builder(this).setTitle("Lunas Pose").setItems(labels,(d,which)->setLunaState(states[which])).show();
+    }
+
+    private void showReactionPicker() {
+        String[] labels={"Winken","Zustimmung","Denken","Überrascht","Entschuldigung","Schlafen","Begeistert","OK"};
+        LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(18),dp(8),dp(18),0);
+        ChibiAtlasView preview=new ChibiAtlasView(this); box.addView(preview,new LinearLayout.LayoutParams(-1,dp(250)));
+        Spinner spinner=new Spinner(this); spinner.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels)); box.addView(spinner);
+        Button play=button("Reaktion abspielen",v->preview.playReaction()); box.addView(play);
+        spinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(android.widget.AdapterView<?> p,View v,int position,long id){preview.setFrame(position);preview.playReaction();}
+            public void onNothingSelected(android.widget.AdapterView<?> p){}
+        });
+        new AlertDialog.Builder(this).setTitle("Lunas Chibi-Reaktionen").setView(box).setPositiveButton("Schließen",null).show();
     }
 
     private Button button(String label, View.OnClickListener l) {
