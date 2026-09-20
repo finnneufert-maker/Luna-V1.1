@@ -1,0 +1,36 @@
+package de.luna.assistant;
+
+import android.content.Context;
+import android.graphics.*;
+import android.view.View;
+
+/** Draws one of eight equally sized cells from Luna's 4x2 sprite atlas. */
+public final class SpriteAtlasView extends View {
+    private final Bitmap atlas;
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    private int frame;
+
+    public SpriteAtlasView(Context context) {
+        super(context);
+        atlas = BitmapFactory.decodeResource(getResources(), R.drawable.luna_sprite_atlas);
+        setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+    }
+
+    public void setFrame(int frame) {
+        this.frame = Math.max(0, Math.min(7, frame));
+        invalidate();
+    }
+
+    @Override protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        int cellW = atlas.getWidth() / 4;
+        int cellH = atlas.getHeight() / 2;
+        int col = frame % 4;
+        int row = frame / 4;
+        Rect src = new Rect(col * cellW, row * cellH, (col + 1) * cellW, (row + 1) * cellH);
+        float scale = Math.min(getWidth() / (float) cellW, getHeight() / (float) cellH);
+        float w = cellW * scale, h = cellH * scale;
+        RectF dst = new RectF((getWidth()-w)/2f, (getHeight()-h)/2f, (getWidth()+w)/2f, (getHeight()+h)/2f);
+        canvas.drawBitmap(atlas, src, dst, paint);
+    }
+}
