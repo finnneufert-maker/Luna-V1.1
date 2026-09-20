@@ -23,9 +23,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK einrichten
-        uses: android-actions/setup-android@v3
-
       - name: Gradle 8.9 einrichten
         uses: gradle/actions/setup-gradle@v4
         with:
