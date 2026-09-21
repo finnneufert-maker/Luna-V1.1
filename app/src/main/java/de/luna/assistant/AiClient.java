@@ -1,5 +1,7 @@
 package de.luna.assistant;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import org.json.JSONObject;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -10,18 +12,35 @@ import java.util.concurrent.Executors;
 
 /** Talks only to Luna's own backend. No OpenAI key is stored in the APK. */
 final class AiClient {
+    private static final String PREFS="luna_ai";
+    private static final String KEY_URL="backend_url";
     interface Callback { void onSuccess(String answer); void onError(String message); }
     private static final ExecutorService EXECUTOR=Executors.newSingleThreadExecutor();
 
-    static boolean isConfigured(){
-        return BuildConfig.LUNA_BACKEND_URL!=null && BuildConfig.LUNA_BACKEND_URL.startsWith("https://");
+    static String backendUrl(Context context){
+        SharedPreferences prefs=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);
+        String saved=prefs.getString(KEY_URL,"").trim();
+        if(saved.startsWith("https://")) return saved.replaceAll("/$","");
+        String built=BuildConfig.LUNA_BACKEND_URL==null?"":BuildConfig.LUNA_BACKEND_URL.trim();
+        return built.startsWith("https://")?built.replaceAll("/$",""):"";
     }
 
-    static void ask(String question,Callback callback){
+    static boolean isConfigured(Context context){ return !backendUrl(context).isEmpty(); }
+
+    static boolean saveBackendUrl(Context context,String value){
+        String url=value==null?"":value.trim().replaceAll("/$","");
+        if(!url.isEmpty()&&!url.startsWith("https://")) return false;
+        context.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().putString(KEY_URL,url).apply();
+        return true;
+    }
+
+    static void ask(Context context,String question,Callback callback){
+        final String endpoint=backendUrl(context);
         EXECUTOR.execute(()->{
             HttpURLConnection connection=null;
             try{
-                URL url=new URL(BuildConfig.LUNA_BACKEND_URL.replaceAll("/$","")+"/v1/luna/answer");
+                if(endpoint.isEmpty()) throw new IOException("Keine Serveradresse");
+                URL url=new URL(endpoint+"/v1/luna/answer");
                 connection=(HttpURLConnection)url.openConnection();
                 connection.setRequestMethod("POST"); connection.setConnectTimeout(12_000); connection.setReadTimeout(45_000);
                 connection.setDoOutput(true); connection.setRequestProperty("Content-Type","application/json; charset=utf-8");
