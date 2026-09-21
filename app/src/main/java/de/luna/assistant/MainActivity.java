@@ -37,7 +37,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.0", 25); root.addView(title);
+        TextView title = text("Luna  •  Version 1.2", 25); root.addView(title);
         ImageView portrait = new ImageView(this); portrait.setImageResource(R.drawable.luna_maid);
         portrait.setScaleType(ImageView.ScaleType.FIT_CENTER); portrait.setAdjustViewBounds(true);
         portrait.setBackgroundColor(Color.rgb(23,19,38)); root.addView(portrait, new LinearLayout.LayoutParams(-1,dp(420)));
@@ -48,6 +48,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         input = new EditText(this); input.setHint("Schreibe oder diktiere etwas …"); input.setTextColor(Color.WHITE);
         input.setHintTextColor(Color.LTGRAY); input.setMinLines(2); root.addView(input);
         root.addView(button("Luna fragen", v -> respond(input.getText().toString())));
+        root.addView(button("⚙️ KI-Verbindung einstellen", v -> showAiSettings()));
         root.addView(button("🎤 Spracheingabe", v -> startSpeech()));
         root.addView(button("📝 Als Berichtsheft-Eintrag speichern", v -> saveReport()));
         root.addView(button("📚 Gespeicherte Berichte anzeigen", v -> showReports()));
@@ -64,22 +65,40 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private void respond(String q) {
         setLunaState("thinking");
-        String s = q.trim(); String low = s.toLowerCase(Locale.GERMAN); String r;
-        if (s.isEmpty()) r = "Sag oder schreibe mir zuerst etwas.";
-        else if (low.contains("hallo") || low.contains("hi ") || low.equals("hi")) r = "Hallo! Was kann ich für dich erledigen?";
-        else if (low.contains("datum") || low.contains("welcher tag")) r = "Heute ist der " + new SimpleDateFormat("dd. MMMM yyyy", Locale.GERMANY).format(new Date()) + ".";
-        else if (low.contains("berichtsheft") && (low.contains("zeigen") || low.contains("öffnen"))) { showReports(); return; }
-        else if (low.contains("was kannst du")) r = "Ich kann Sprache erkennen, antworten, Texte vorlesen, Berichtsheft-Einträge speichern und als Bildschirmfigur erscheinen.";
-        else if(AiClient.isConfigured()) {
+        String s = q.trim(); String low = s.toLowerCase(Locale.GERMAN);
+        if (low.contains("berichtsheft") && (low.contains("zeigen") || low.contains("öffnen"))) { showReports(); return; }
+        if(AiClient.isConfigured(this)) {
             answer.setText("Ich denke darüber nach …");
-            AiClient.ask(s,new AiClient.Callback(){
+            AiClient.ask(this,s,new AiClient.Callback(){
                 public void onSuccess(String result){runOnUiThread(()->{answer.setText(result);speak(result);});}
-                public void onError(String message){runOnUiThread(()->{answer.setText(message);setLunaState("idle");});}
+                public void onError(String message){runOnUiThread(()->{
+                    String fallback=OfflineAssistant.answer(MainActivity.this,s);
+                    answer.setText(message+"\n\nOffline-Antwort: "+fallback); speak(fallback); setLunaState("idle");
+                });}
             });
             return;
         }
-        else r = "Die Online-KI ist noch nicht eingerichtet. Lokale Funktionen wie Berichtsheft, Sprache und Notizen funktionieren weiterhin.";
+        String r=OfflineAssistant.answer(this,s);
         answer.setText(r); speak(r);
+    }
+
+    private void showAiSettings() {
+        EditText field=new EditText(this);
+        field.setHint("https://dein-luna-server.example");
+        field.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        field.setText(AiClient.backendUrl(this));
+        int pad=dp(18); field.setPadding(pad,pad,pad,pad);
+        new AlertDialog.Builder(this)
+                .setTitle("Sichere KI-Verbindung")
+                .setMessage("Trage die HTTPS-Adresse deines Luna-KI-Servers ein. API-Schlüssel gehören niemals direkt in die App.")
+                .setView(field)
+                .setNegativeButton("Abbrechen",null)
+                .setNeutralButton("Entfernen",(d,w)->{AiClient.saveBackendUrl(this,"");answer.setText("Online-KI-Verbindung entfernt. Luna antwortet weiterhin offline.");})
+                .setPositiveButton("Speichern",(d,w)->{
+                    if(AiClient.saveBackendUrl(this,field.getText().toString()))
+                        answer.setText(AiClient.isConfigured(this)?"KI-Server gespeichert. Stelle jetzt eine Frage.":"Keine Serveradresse gespeichert. Luna antwortet offline.");
+                    else answer.setText("Bitte verwende eine vollständige HTTPS-Adresse.");
+                }).show();
     }
 
     private void saveReport() {
