@@ -26,6 +26,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
+        LunaMemory.seedKnownReports(this);
         tts = new TextToSpeech(this, this);
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 9);
@@ -38,7 +39,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.2", 25); root.addView(title);
+        TextView title = text("Luna  •  Version 1.4", 25); root.addView(title);
         luna3d = new Luna3DView(this);
         root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(440)));
 
