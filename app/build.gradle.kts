@@ -4,11 +4,11 @@ android {
     namespace = "de.luna.assistant"
     compileSdk = 35
     defaultConfig {
-        applicationId = "de.luna.assistant.v11"
+        applicationId = "de.luna.assistant.v14"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.3.0"
+        versionCode = 8
+        versionName = "1.4.0"
         val backendUrl = providers.gradleProperty("LUNA_BACKEND_URL").orElse("").get()
             .replace("\\", "\\\\").replace("\"", "\\\"")
         buildConfigField("String", "LUNA_BACKEND_URL", "\"$backendUrl\"")
