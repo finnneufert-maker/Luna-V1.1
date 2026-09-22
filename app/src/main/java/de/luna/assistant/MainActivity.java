@@ -22,6 +22,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private EditText input;
     private TextView answer;
     private TextToSpeech tts;
+    private Luna3DView luna3d;
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -38,9 +39,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
         TextView title = text("Luna  •  Version 1.2", 25); root.addView(title);
-        ImageView portrait = new ImageView(this); portrait.setImageResource(R.drawable.luna_maid);
-        portrait.setScaleType(ImageView.ScaleType.FIT_CENTER); portrait.setAdjustViewBounds(true);
-        portrait.setBackgroundColor(Color.rgb(23,19,38)); root.addView(portrait, new LinearLayout.LayoutParams(-1,dp(420)));
+        luna3d = new Luna3DView(this);
+        root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(440)));
 
         answer = text("Hallo! Ich kann sprechen, deine Notizen beantworten und Berichtsheft-Einträge lokal speichern.", 17);
         answer.setPadding(dp(14),dp(14),dp(14),dp(14)); answer.setBackgroundColor(Color.rgb(38,32,58)); root.addView(answer);
@@ -65,6 +65,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private void respond(String q) {
         setLunaState("thinking");
+        if(luna3d!=null) luna3d.setExpression("thinking");
         String s = q.trim(); String low = s.toLowerCase(Locale.GERMAN);
         if (low.contains("berichtsheft") && (low.contains("zeigen") || low.contains("öffnen"))) { showReports(); return; }
         if(AiClient.isConfigured(this)) {
@@ -189,12 +190,14 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         if(status==TextToSpeech.SUCCESS) {
             tts.setLanguage(Locale.GERMANY);
             tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
-                public void onStart(String id){ runOnUiThread(() -> setLunaState("talking")); }
-                public void onDone(String id){ runOnUiThread(() -> setLunaState("idle")); }
-                public void onError(String id){ runOnUiThread(() -> setLunaState("idle")); }
+                public void onStart(String id){ runOnUiThread(() -> {setLunaState("talking");if(luna3d!=null)luna3d.setExpression("talking");}); }
+                public void onDone(String id){ runOnUiThread(() -> {setLunaState("idle");if(luna3d!=null)luna3d.setExpression("idle");}); }
+                public void onError(String id){ runOnUiThread(() -> {setLunaState("idle");if(luna3d!=null)luna3d.setExpression("idle");}); }
             });
         }
     }
+    @Override protected void onPause(){if(luna3d!=null)luna3d.onPause();super.onPause();}
+    @Override protected void onResume(){super.onResume();if(luna3d!=null)luna3d.onResume();}
     @Override protected void onDestroy() { if(tts!=null){tts.stop();tts.shutdown();} super.onDestroy(); }
     private int dp(int x){return(int)(x*getResources().getDisplayMetrics().density);}
 }
