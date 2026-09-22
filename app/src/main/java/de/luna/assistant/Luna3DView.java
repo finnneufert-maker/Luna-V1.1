@@ -53,51 +53,62 @@ public final class Luna3DView extends GLSurfaceView {
         @Override public void onSurfaceChanged(GL10 gl,int width,int height) {
             GLES20.glViewport(0,0,width,height);
             float ratio=width/(float)Math.max(1,height);
-            Matrix.frustumM(projection,0,-ratio,ratio,-1,1,2.2f,14f);
-            Matrix.setLookAtM(view,0,0,0.15f,5.4f,0,0.1f,0,0,1,0);
+            Matrix.frustumM(projection,0,-ratio,ratio,-1,1,2.4f,16f);
+            Matrix.setLookAtM(view,0,0,0.05f,6.2f,0,-0.05f,0,0,1,0);
         }
 
         @Override public void onDrawFrame(GL10 gl) {
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);
             GLES20.glUseProgram(program);
             float t=(System.currentTimeMillis()-started)/1000f;
-            float breathe=(float)Math.sin(t*1.8f)*0.025f;
-            float sway=(float)Math.sin(t*0.7f)*3.2f;
+            float breathe=(float)Math.sin(t*1.8f)*0.018f;
+            float bob=(float)Math.sin(t*1.8f)*0.018f;
+            float sway=(float)Math.sin(t*0.7f)*2.0f;
+            float step=(float)Math.sin(t*0.7f)*0.018f;
             float blink=((t%4.2f)>3.95f)?0.08f:1f;
             if("surprised".equals(expression)) blink=1.35f;
             if("sleeping".equals(expression)) blink=0.06f;
             float talk=("talking".equals(expression))?(0.06f+0.08f*Math.abs((float)Math.sin(t*10f))):0.035f;
 
-            // Hair behind the head and body.
-            part(0,0.70f,0.05f,0.78f,0.90f,0.42f,sway,0.78f,0.75f,0.90f,1);
-            part(0,-0.45f,0.02f,0.48f+breathe,0.66f+breathe,0.31f,sway*0.35f,0.12f,0.10f,0.18f,1);
-            // Maid apron and skirt.
-            part(0,-0.35f,0.30f,0.34f,0.50f,0.12f,sway*0.35f,0.94f,0.94f,0.98f,1);
-            part(0,-0.87f,0.02f,0.68f,0.42f,0.40f,sway*0.25f,0.10f,0.08f,0.15f,1);
-            // Legs and shoes.
-            part(-0.22f,-1.34f,0.02f,0.13f,0.42f,0.13f,-sway*0.15f,0.88f,0.88f,0.94f,1);
-            part(0.22f,-1.34f,0.02f,0.13f,0.42f,0.13f,sway*0.15f,0.88f,0.88f,0.94f,1);
-            part(-0.22f,-1.63f,0.10f,0.18f,0.12f,0.28f,0,0.08f,0.06f,0.10f,1);
-            part(0.22f,-1.63f,0.10f,0.18f,0.12f,0.28f,0,0.08f,0.06f,0.10f,1);
-            // Arms with a gentle idle swing.
-            part(-0.50f,-0.42f,0.03f,0.13f,0.48f,0.13f,12+sway,0.96f,0.83f,0.82f,1);
-            part(0.50f,-0.42f,0.03f,0.13f,0.48f,0.13f,-12-sway,0.96f,0.83f,0.82f,1);
-            // Face and silver hair cap.
-            part(0,0.72f,0.33f,0.67f,0.70f,0.53f,sway,0.98f,0.86f,0.84f,1);
-            part(0,1.03f,0.15f,0.72f,0.48f,0.50f,sway,0.86f,0.84f,0.94f,1);
-            // Cat ears.
-            pyramid(-0.40f,1.43f,0.16f,0.30f,0.42f,0.22f,sway-5,0.82f,0.80f,0.91f,1);
-            pyramid(0.40f,1.43f,0.16f,0.30f,0.42f,0.22f,sway+5,0.82f,0.80f,0.91f,1);
-            // Violet eyes, blink by scaling vertically.
-            part(-0.24f,0.79f,0.80f,0.11f,0.14f*blink,0.045f,sway,0.47f,0.20f,0.85f,1);
-            part(0.24f,0.79f,0.80f,0.11f,0.14f*blink,0.045f,sway,0.47f,0.20f,0.85f,1);
-            // Mouth / lip sync.
-            part(0,0.48f,0.82f,0.08f,talk,0.035f,sway,0.48f,0.12f,0.22f,1);
+            // Joined full-body silhouette: hair, legs, dress, torso and arms share one gentle bob.
+            part(0,0.28f+bob,-0.12f,0.64f,1.10f,0.34f,sway,0.78f,0.76f,0.88f,1);
+            part(-0.20f,-1.28f+bob+step,0.01f,0.14f,0.39f,0.14f,-1,0.94f,0.94f,0.98f,1);
+            part(0.20f,-1.28f+bob-step,0.01f,0.14f,0.39f,0.14f,1,0.94f,0.94f,0.98f,1);
+            part(-0.20f,-1.59f+bob+step,0.11f,0.20f,0.13f,0.30f,-2,0.07f,0.05f,0.09f,1);
+            part(0.20f,-1.59f+bob-step,0.11f,0.20f,0.13f,0.30f,2,0.07f,0.05f,0.09f,1);
+            part(0,-0.79f+bob,0.00f,0.66f,0.47f,0.39f,sway*.25f,0.10f,0.075f,0.14f,1);
+            part(0,-0.39f+bob,0.02f,0.43f+breathe,0.55f+breathe,0.28f,sway*.30f,0.11f,0.085f,0.16f,1);
+            part(0,-0.59f+bob,0.31f,0.35f,0.43f,0.09f,sway*.25f,0.95f,0.95f,0.99f,1);
+            part(0,-0.94f+bob,0.24f,0.59f,0.075f,0.10f,sway*.25f,0.97f,0.97f,1,1);
+            part(0,0.02f+bob,0.25f,0.33f,0.10f,0.09f,sway,0.96f,0.96f,1,1);
+            part(-0.43f,-0.18f+bob,0.02f,0.22f,0.22f,0.20f,8+sway,0.96f,0.96f,0.99f,1);
+            part(0.43f,-0.18f+bob,0.02f,0.22f,0.22f,0.20f,-8-sway,0.96f,0.96f,0.99f,1);
+            part(-0.52f,-0.52f+bob,0.03f,0.12f,0.40f,0.12f,8+sway,0.97f,0.84f,0.81f,1);
+            part(0.52f,-0.52f+bob,0.03f,0.12f,0.40f,0.12f,-8-sway,0.97f,0.84f,0.81f,1);
+            part(-0.57f,-0.82f+bob,0.05f,0.14f,0.15f,0.13f,8+sway,0.97f,0.84f,0.81f,1);
+            part(0.57f,-0.82f+bob,0.05f,0.14f,0.15f,0.13f,-8-sway,0.97f,0.84f,0.81f,1);
+
+            // Neck and overlapping hair remove the hard seam around the head.
+            part(0,0.17f+bob,0.08f,0.16f,0.22f,0.16f,sway,0.97f,0.84f,0.81f,1);
+            part(0,0.70f+bob,0.18f,0.61f,0.65f,0.48f,sway,0.97f,0.84f,0.81f,1);
+            part(0,0.97f+bob,0.00f,0.66f,0.51f,0.47f,sway,0.86f,0.84f,0.94f,1);
+            part(-0.25f,0.98f+bob,0.48f,0.31f,0.22f,0.10f,-16+sway,0.86f,0.84f,0.94f,1);
+            part(0.22f,0.99f+bob,0.48f,0.34f,0.22f,0.10f,14+sway,0.86f,0.84f,0.94f,1);
+            pyramid(-0.39f,1.43f+bob,0.04f,0.28f,0.38f,0.22f,sway-4,0.82f,0.80f,0.91f,1);
+            pyramid(0.39f,1.43f+bob,0.04f,0.28f,0.38f,0.22f,sway+4,0.82f,0.80f,0.91f,1);
+            pyramid(-0.39f,1.43f+bob,0.25f,0.14f,0.22f,0.07f,sway-4,0.82f,0.48f,0.63f,1);
+            pyramid(0.39f,1.43f+bob,0.25f,0.14f,0.22f,0.07f,sway+4,0.82f,0.48f,0.63f,1);
+            part(-0.22f,0.72f+bob,0.65f,0.12f,0.15f*blink,0.035f,sway,0.54f,0.27f,0.91f,1);
+            part(0.22f,0.72f+bob,0.65f,0.12f,0.15f*blink,0.035f,sway,0.54f,0.27f,0.91f,1);
+            part(-0.22f,0.72f+bob,0.69f,0.035f,0.11f*blink,0.018f,sway,0.09f,0.05f,0.12f,1);
+            part(0.22f,0.72f+bob,0.69f,0.035f,0.11f*blink,0.018f,sway,0.09f,0.05f,0.12f,1);
+            part(0,0.55f+bob,0.67f,0.045f,0.035f,0.025f,sway,0.88f,0.66f,0.67f,1);
+            part(0,0.42f+bob,0.67f,0.075f,talk,0.025f,sway,0.49f,0.13f,0.23f,1);
             // Tail: animated chain of rounded segments.
             for(int i=0;i<5;i++){
                 float a=t*1.5f+i*0.45f;
-                float x=0.58f+i*0.17f+(float)Math.sin(a)*0.05f;
-                float y=-0.72f+i*0.12f+(float)Math.cos(a)*0.04f;
+                float x=0.57f+i*0.14f+(float)Math.sin(a)*0.04f;
+                float y=-0.76f+bob+i*0.13f+(float)Math.cos(a)*0.035f;
                 part(x,y,-0.12f,0.19f,0.22f,0.16f,sway,0.82f,0.80f,0.90f,1);
             }
         }

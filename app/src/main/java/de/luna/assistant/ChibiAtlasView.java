@@ -13,7 +13,7 @@ public final class ChibiAtlasView extends View {
     public ChibiAtlasView(Context context) {
         super(context);
         // Reuse the installed full-body atlas so the APK has no loose/missing artwork.
-        atlas = BitmapFactory.decodeResource(getResources(), R.drawable.luna_sprite_atlas);
+        atlas = BitmapFactory.decodeResource(getResources(), R.drawable.luna_sprite_atlas_v2);
     }
 
     public void setFrame(int value) {

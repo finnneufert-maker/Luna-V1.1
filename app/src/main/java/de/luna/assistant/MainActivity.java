@@ -39,9 +39,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.4", 25); root.addView(title);
+        TextView title = text("Luna  •  Version 1.5", 25); root.addView(title);
         luna3d = new Luna3DView(this);
-        root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(440)));
+        root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(500)));
 
         answer = text("Hallo! Ich kann sprechen, deine Notizen beantworten und Berichtsheft-Einträge lokal speichern.", 17);
         answer.setPadding(dp(14),dp(14),dp(14),dp(14)); answer.setBackgroundColor(Color.rgb(38,32,58)); root.addView(answer);
@@ -57,6 +57,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.addView(button("🐾 Luna über anderen Apps anzeigen", v -> startOverlay()));
         root.addView(button("🎭 Lunas Posen testen", v -> showPosePicker()));
         root.addView(button("🐱 Chibi-Reaktionen ansehen", v -> showReactionPicker()));
+        root.addView(button("💬 Chibi über WhatsApp teilen", v -> shareChibiToWhatsApp()));
         root.addView(button("Luna vom Bildschirm entfernen", v -> stopService(new Intent(this, OverlayService.class))));
 
         TextView safety = text("Datenschutz: Version 1 speichert Berichtsheft-Einträge nur lokal. Sie versendet keine Nachrichten und führt keine Finanzgeschäfte aus.", 13);
@@ -174,6 +175,25 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             public void onNothingSelected(android.widget.AdapterView<?> p){}
         });
         new AlertDialog.Builder(this).setTitle("Lunas Chibi-Reaktionen").setView(box).setPositiveButton("Schließen",null).show();
+    }
+
+    private void shareChibiToWhatsApp() {
+        String[] labels={"Winken","Zustimmung","Denken","Überrascht","Entschuldigung","Schlafen","Begeistert","OK"};
+        new AlertDialog.Builder(this).setTitle("Chibi für WhatsApp auswählen").setItems(labels,(d,which)->{
+            Uri sticker=Uri.parse("content://"+getPackageName()+".stickers/reaction/"+which);
+            Intent send=new Intent(Intent.ACTION_SEND);
+            send.setType("image/png");
+            send.putExtra(Intent.EXTRA_STREAM,sticker);
+            send.putExtra(Intent.EXTRA_TEXT,"Luna: "+labels[which]);
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            send.setPackage("com.whatsapp");
+            try { startActivity(send); }
+            catch (Exception e) {
+                send.setPackage(null);
+                try { startActivity(Intent.createChooser(send,"Lunas Chibi teilen")); }
+                catch (Exception ignored) { answer.setText("Auf diesem Gerät ist keine passende Teilen-App verfügbar."); }
+            }
+        }).show();
     }
 
     private Button button(String label, View.OnClickListener l) {
