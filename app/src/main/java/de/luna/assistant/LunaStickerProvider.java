@@ -20,9 +20,11 @@ public final class LunaStickerProvider extends ContentProvider {
         int frame;
         try { frame=Math.max(0,Math.min(7,Integer.parseInt(uri.getLastPathSegment()))); }
         catch(Exception e) { frame=0; }
-        Bitmap atlas=BitmapFactory.decodeResource(getContext().getResources(),R.drawable.luna_sprite_atlas_v2);
-        int cellW=atlas.getWidth()/4, cellH=atlas.getHeight()/2;
-        Bitmap sticker=Bitmap.createBitmap(atlas,(frame%4)*cellW,(frame/4)*cellH,cellW,cellH);
+        int[] ids={R.drawable.luna_emoji_wave,R.drawable.luna_emoji_thumbsup,
+                R.drawable.luna_emoji_thinking,R.drawable.luna_emoji_surprised,
+                R.drawable.luna_emoji_sorry,R.drawable.luna_emoji_sleep,
+                R.drawable.luna_emoji_excited,R.drawable.luna_emoji_ok};
+        Bitmap sticker=BitmapFactory.decodeResource(getContext().getResources(),ids[frame]);
         File out=new File(getContext().getCacheDir(),"luna_chibi_"+frame+".png");
         try(FileOutputStream stream=new FileOutputStream(out)) { sticker.compress(Bitmap.CompressFormat.PNG,100,stream); }
         catch(Exception e) { throw new FileNotFoundException("Sticker konnte nicht erstellt werden."); }

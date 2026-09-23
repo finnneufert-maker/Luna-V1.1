@@ -39,7 +39,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.5", 25); root.addView(title);
+        TextView title = text("Luna  •  Version 1.6", 25); root.addView(title);
+        TextView modelHint = text("3D-Ansicht: Ziehe Luna nach links oder rechts, um sie zu drehen.", 13);
+        modelHint.setTextColor(Color.LTGRAY); root.addView(modelHint);
         luna3d = new Luna3DView(this);
         root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(500)));
 
