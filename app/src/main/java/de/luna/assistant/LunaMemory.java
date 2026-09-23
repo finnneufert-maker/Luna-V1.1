@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.HashSet;
+import java.util.Set;
 
 final class LunaMemory {
     private static final String PREFS = "luna_memory";
@@ -77,6 +79,55 @@ final class LunaMemory {
     static String reports(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(REPORTS, "Noch keine Einträge gespeichert.");
+    }
+
+    static boolean importReports(Context context, String imported) {
+        if (imported == null) return false;
+        String clean = imported.trim();
+        if (clean.isEmpty()) return false;
+        SharedPreferences p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        String current = p.getString(REPORTS, "");
+        if (current.contains(clean)) return true;
+        // A complete old Luna export already contains the built-in knowledge. Prefer it
+        // over duplicating the same long block, while preserving newer local entries.
+        String merged;
+        if (clean.contains("BERICHTSHEFT-WISSEN")) {
+            merged = clean;
+            if (!current.isEmpty() && !clean.contains(current))
+                merged += "\n\n— — —\n\nSPÄTERE EINTRÄGE\n\n" + current;
+        } else {
+            merged = current + (current.isEmpty() ? "" : "\n\n— — —\n\n") +
+                    "IMPORTIERTE EINTRÄGE\n\n" + clean;
+        }
+        p.edit().putString(REPORTS, merged).putBoolean(SEEDED, true).commit();
+        return true;
+    }
+
+    static String findRelevant(Context context, String question) {
+        if (question == null) return "";
+        Set<String> words = new HashSet<>();
+        for (String word : question.toLowerCase(Locale.GERMAN).split("[^a-zäöüß0-9]+"))
+            if (word.length() >= 4 && !isStopWord(word)) words.add(word);
+        if (words.isEmpty()) return "";
+        StringBuilder found = new StringBuilder();
+        int matches = 0;
+        for (String line : reports(context).split("\\r?\\n")) {
+            String low = line.toLowerCase(Locale.GERMAN);
+            boolean hit = false;
+            for (String word : words) if (low.contains(word)) { hit = true; break; }
+            if (hit && !line.trim().isEmpty()) {
+                if (matches++ > 0) found.append("\n");
+                found.append("• ").append(line.replaceFirst("^[•\\-]\\s*", "").trim());
+                if (matches == 4) break;
+            }
+        }
+        return found.toString();
+    }
+
+    private static boolean isStopWord(String w) {
+        return w.equals("habe") || w.equals("heute") || w.equals("bitte") ||
+                w.equals("kannst") || w.equals("wurde") || w.equals("mein") ||
+                w.equals("eine") || w.equals("einen") || w.equals("über");
     }
 
     private static String formatReport(String raw) {
