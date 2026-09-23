@@ -16,4 +16,18 @@ android {
         buildConfigField("String", "LUNA_BACKEND_URL", "\"$backendUrl\"")
     }
     buildFeatures { buildConfig = true }
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("LUNA_KEYSTORE_PATH") ?: "luna-release.jks")
+            storePassword = System.getenv("LUNA_KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("LUNA_KEY_ALIAS") ?: "luna-release"
+            keyPassword = System.getenv("LUNA_KEY_PASSWORD") ?: ""
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
+    }
 }
