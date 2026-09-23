@@ -15,10 +15,16 @@ import android.widget.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.OutputStream;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
     private static final int SPEECH = 31;
     private static final int EXPORT = 32;
+    private static final int IMPORT = 33;
+    private static final int BACKUP = 34;
     private EditText input;
     private TextView answer;
     private TextToSpeech tts;
@@ -39,7 +45,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.8", 25); root.addView(title);
+        TextView title = text("Luna  •  Version 1.9", 25); root.addView(title);
         TextView modelHint = text("Echtes 3D: Ziehe Luna stufenlos nach links oder rechts, um sie vollständig zu drehen.", 13);
         modelHint.setTextColor(Color.LTGRAY); root.addView(modelHint);
         luna3d = new Luna3DView(this);
@@ -61,6 +67,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.addView(button("📝 Als Berichtsheft-Eintrag speichern", v -> saveReport()));
         root.addView(button("📚 Gespeicherte Berichte anzeigen", v -> showReports()));
         root.addView(button("💾 Berichtsheft als Textdatei exportieren", v -> exportReports()));
+        root.addView(button("📥 Daten einer früheren Luna importieren", v -> importOldData()));
+        root.addView(button("🔐 Vollständige Luna-Sicherung erstellen", v -> exportBackup()));
         root.addView(button("🐾 Luna über anderen Apps anzeigen", v -> startOverlay()));
         root.addView(button("🎭 Lunas Posen testen", v -> showPosePicker()));
         root.addView(button("🐱 Chibi-Reaktionen ansehen", v -> showReactionPicker()));
@@ -140,6 +148,20 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         startActivityForResult(i, EXPORT);
     }
 
+    private void importOldData() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.setType("*/*");
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(i, IMPORT);
+    }
+
+    private void exportBackup() {
+        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.setType("application/json");
+        i.putExtra(Intent.EXTRA_TITLE, "Luna-Datensicherung.json");
+        startActivityForResult(i, BACKUP);
+    }
+
     @Override protected void onActivityResult(int req,int result,Intent data) {
         super.onActivityResult(req,result,data);
         if(req==SPEECH && result==RESULT_OK && data!=null) {
@@ -152,6 +174,46 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                 answer.setText("Das Berichtsheft wurde als Textdatei gespeichert.");
             } catch (Exception e) { answer.setText("Die Textdatei konnte nicht gespeichert werden."); }
         }
+        if(req==IMPORT && result==RESULT_OK && data!=null && data.getData()!=null) {
+            try(InputStream in=getContentResolver().openInputStream(data.getData())) {
+                String content=readText(in);
+                String reports=content;
+                if(content.trim().startsWith("{")) {
+                    JSONObject json=new JSONObject(content);
+                    reports=json.optString("reports","");
+                    String backend=json.optString("backend_url","");
+                    if(!backend.isEmpty()) AiClient.saveBackendUrl(this,backend);
+                    JSONObject pos=json.optJSONObject("overlay_position");
+                    if(pos!=null) getSharedPreferences("overlay_position",MODE_PRIVATE).edit()
+                            .putInt("x",pos.optInt("x",20)).putInt("y",pos.optInt("y",250)).apply();
+                }
+                answer.setText(LunaMemory.importReports(this,reports)
+                        ?"Die früheren Luna-Daten wurden übernommen."
+                        :"Die Datei enthielt keine verwendbaren Luna-Daten.");
+            } catch(Exception e) { answer.setText("Diese Datei konnte nicht als Luna-Datensicherung gelesen werden."); }
+        }
+        if(req==BACKUP && result==RESULT_OK && data!=null && data.getData()!=null) {
+            try(OutputStream out=getContentResolver().openOutputStream(data.getData())) {
+                android.content.SharedPreferences pos=getSharedPreferences("overlay_position",MODE_PRIVATE);
+                JSONObject json=new JSONObject()
+                        .put("format","luna-backup")
+                        .put("schema_version",1)
+                        .put("reports",LunaMemory.reports(this))
+                        .put("backend_url",AiClient.backendUrl(this))
+                        .put("overlay_position",new JSONObject()
+                                .put("x",pos.getInt("x",20)).put("y",pos.getInt("y",250)));
+                out.write(json.toString(2).getBytes(StandardCharsets.UTF_8));
+                answer.setText("Die vollständige Luna-Datensicherung wurde gespeichert.");
+            } catch(Exception e) { answer.setText("Die Luna-Datensicherung konnte nicht gespeichert werden."); }
+        }
+    }
+
+    private String readText(InputStream in)throws java.io.IOException {
+        if(in==null) return "";
+        ByteArrayOutputStream out=new ByteArrayOutputStream();
+        byte[] buffer=new byte[8192]; int count;
+        while((count=in.read(buffer))!=-1 && out.size()<2_000_000) out.write(buffer,0,count);
+        return out.toString("UTF-8");
     }
 
     private void startOverlay() {

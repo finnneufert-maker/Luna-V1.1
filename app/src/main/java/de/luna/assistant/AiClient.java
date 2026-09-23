@@ -44,7 +44,10 @@ final class AiClient {
                 connection=(HttpURLConnection)url.openConnection();
                 connection.setRequestMethod("POST"); connection.setConnectTimeout(12_000); connection.setReadTimeout(45_000);
                 connection.setDoOutput(true); connection.setRequestProperty("Content-Type","application/json; charset=utf-8");
-                byte[] body=new JSONObject().put("question",question).toString().getBytes(StandardCharsets.UTF_8);
+                JSONObject request=new JSONObject().put("question",question);
+                String memory=LunaMemory.findRelevant(context,question);
+                if(!memory.isEmpty()) request.put("memory",memory);
+                byte[] body=request.toString().getBytes(StandardCharsets.UTF_8);
                 try(OutputStream out=connection.getOutputStream()){out.write(body);}
                 int status=connection.getResponseCode();
                 InputStream stream=status>=200&&status<300?connection.getInputStream():connection.getErrorStream();

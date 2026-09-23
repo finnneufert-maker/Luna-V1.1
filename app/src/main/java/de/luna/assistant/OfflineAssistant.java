@@ -77,6 +77,9 @@ final class OfflineAssistant {
             return "Für Sprache nutze das Mikrofon. Für Berichte nutze die Berichtsheft-Knöpfe. Unter „KI-Verbindung einstellen“ kannst du später deinen sicheren Online-KI-Server eintragen.";
         if (low.contains("danke")) return "Gern geschehen!";
         if (low.contains("gute nacht")) return "Gute Nacht und erhol dich gut.";
+        String memory = LunaMemory.findRelevant(context, q);
+        if (!memory.isEmpty())
+            return "Dazu habe ich in deinen gespeicherten Luna-Daten gefunden:\n" + memory;
         return "Darauf kann ich offline noch nicht zuverlässig antworten. Verbinde unter „KI-Verbindung einstellen“ einen sicheren KI-Server; dann kann ich auch freie und schwierigere Fragen beantworten.";
     }
 
