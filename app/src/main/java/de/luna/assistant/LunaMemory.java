@@ -53,6 +53,7 @@ final class LunaMemory {
             "September 2026\n" +
             "• 06.09.: 1.520 Bratwürste gebraten; nicht zum Veranstaltungsort mitgefahren.\n" +
             "• 19.09.: Erdbeermousse, Tiramisu und Mascarponecreme hergestellt.\n\n" +
+            "• 23.09.: In der Berufsschule wurden Kommunikation und Garverfahren behandelt.\n\n" +
             "Wiederkehrende Tätigkeiten\n" +
             "• Gemüse schneiden, Ware für den nächsten Tag vorbereiten, sicheres und hygienisches Arbeiten, Reinigen und Aufräumen.\n\n" +
             "Schreibregeln\n" +

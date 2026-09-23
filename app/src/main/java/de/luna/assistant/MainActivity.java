@@ -66,6 +66,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.addView(button("🎤 Spracheingabe", v -> startSpeech()));
         root.addView(button("📝 Als Berichtsheft-Eintrag speichern", v -> saveReport()));
         root.addView(button("📚 Gespeicherte Berichte anzeigen", v -> showReports()));
+        root.addView(button("📖 Lunas eigene Magiereise", v -> showStories()));
         root.addView(button("💾 Berichtsheft als Textdatei exportieren", v -> exportReports()));
         root.addView(button("📥 Daten einer früheren Luna importieren", v -> importOldData()));
         root.addView(button("🔐 Vollständige Luna-Sicherung erstellen", v -> exportBackup()));
@@ -128,6 +129,21 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private void showReports() {
         new AlertDialog.Builder(this).setTitle("Berichtsheft").setMessage(LunaMemory.reports(this)).setPositiveButton("Schließen",null).show();
+    }
+
+    private void showStories() {
+        new AlertDialog.Builder(this).setTitle("Lunas Geschichten")
+                .setItems(StoryLibrary.TITLES,(dialog,which)->showChapter(which)).show();
+    }
+
+    private void showChapter(int chapter) {
+        String story=StoryLibrary.chapter(chapter);
+        new AlertDialog.Builder(this).setTitle(StoryLibrary.TITLES[chapter])
+                .setMessage(story.substring(story.indexOf("\n\n")+2))
+                .setNegativeButton("Schließen",null)
+                .setNeutralButton("Vorlesen",(d,w)->speak(story))
+                .setPositiveButton("Stopp",(d,w)->{if(tts!=null)tts.stop();setLunaState("idle");})
+                .show();
     }
 
     private void startSpeech() {
@@ -279,6 +295,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     @Override public void onInit(int status) {
         if(status==TextToSpeech.SUCCESS) {
             tts.setLanguage(Locale.GERMANY);
+            tts.setPitch(1.16f);
+            tts.setSpeechRate(0.93f);
             tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
                 public void onStart(String id){ runOnUiThread(() -> {setLunaState("talking");if(luna3d!=null)luna3d.setExpression("talking");}); }
                 public void onDone(String id){ runOnUiThread(() -> {setLunaState("idle");if(luna3d!=null)luna3d.setExpression("idle");}); }

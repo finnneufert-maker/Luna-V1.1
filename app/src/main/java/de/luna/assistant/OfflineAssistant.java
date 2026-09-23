@@ -29,13 +29,15 @@ final class OfflineAssistant {
             return "Am 06.09.2026 hast du 1.520 Bratwürste gebraten. Du bist nicht zum Veranstaltungsort mitgefahren.";
         if (low.contains("19.09") || low.contains("19. september") || low.contains("erdbeermousse"))
             return "Am 19.09.2026 hast du Erdbeermousse, Tiramisu und Mascarponecreme hergestellt.";
+        if (low.contains("23.09") || low.contains("23. september") || low.contains("kommunikation") || low.contains("garverfahren"))
+            return "Am 23.09.2026 wurden in der Berufsschule die Themen Kommunikation und Garverfahren behandelt.";
         if (low.contains("04.11") || low.contains("4. november"))
             return "Für den 04.11.2025 ist notiert, dass du krank warst. Weitere sichere Einzelheiten liegen dazu nicht vor.";
 
         if (asksMonth(low, "august"))
             return "August 2025: Betrieb, Küche, Abläufe und Lagerorte kennengelernt; Küchengeräte erklärt bekommen; Krallengriff sowie Hygiene und sicheres Arbeiten an heißen Geräten behandelt.";
         if (asksMonth(low, "september"))
-            return "September 2025: erster Schultag, Besteck und Tischdekoration, Geflügel und Eier, pochiertes Ei, Spiegelei, Tranchieren, Trockenmarinade und Brownie-Masse. September 2026: am 06.09. 1.520 Bratwürste gebraten und am 19.09. Erdbeermousse, Tiramisu und Mascarponecreme hergestellt.";
+            return "September 2025: erster Schultag, Besteck und Tischdekoration, Geflügel und Eier, pochiertes Ei, Spiegelei, Tranchieren, Trockenmarinade und Brownie-Masse. September 2026: am 06.09. 1.520 Bratwürste gebraten, am 19.09. Erdbeermousse, Tiramisu und Mascarponecreme hergestellt und am 23.09. in der Berufsschule Kommunikation und Garverfahren behandelt.";
         if (asksMonth(low, "oktober"))
             return "Oktober 2025: französische Küche und Fachbegriffe, Warenkunde zum Thema Wein sowie Rechte und Pflichten von Auszubildenden und Arbeitgebern.";
         if (asksMonth(low, "november"))
@@ -64,7 +66,7 @@ final class OfflineAssistant {
         if (low.contains("sicherheit") || low.contains("hygiene"))
             return "Wichtig sind saubere Arbeitsflächen und Hände, geeignete Arbeitskleidung, sichere Messerführung, vorsichtiger Umgang mit heißen Geräten und die Sicherheitsunterweisung im Februar 2026.";
         if (low.contains("berufsschule") || low.contains("unterricht"))
-            return "Gespeicherte Schulthemen: Besteck und Tischdekoration; Geflügel und Ei; Teige und Massen; französische Küche und Fachbegriffe; Warenkunde zum Thema Wein; Rechte und Pflichten; Sauerteig sowie Eiweiß, Proteine und Fette.";
+            return "Gespeicherte Schulthemen: Besteck und Tischdekoration; Geflügel und Ei; Teige und Massen; französische Küche und Fachbegriffe; Warenkunde zum Thema Wein; Rechte und Pflichten; Sauerteig; Eiweiß, Proteine und Fette sowie Kommunikation und Garverfahren.";
         if (low.contains("was habe ich gelernt") || low.contains("was hab ich gelernt"))
             return "Du hast unter anderem den Krallengriff, sicheres und hygienisches Arbeiten, Geflügel- und Eierzubereitungen, Tranchieren, Trockenmarinade, Teige und Massen, Ratatouille sowie mehrere Süßspeisen behandelt. Auch Geräte wie Fritteuse, Konvektomat und Gasherd sind notiert.";
         if (low.contains("formulieren") || low.contains("monatsbericht") || low.contains("zusammenfassen"))
