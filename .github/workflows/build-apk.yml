@@ -28,13 +28,25 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Debug-APK bauen
-        run: gradle :app:assembleDebug --stacktrace -PLUNA_BACKEND_URL="${{ secrets.LUNA_BACKEND_URL }}"
+      - name: Dauerhaften Signaturschlüssel vorbereiten
+        env:
+          LUNA_KEYSTORE_BASE64: ${{ secrets.LUNA_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$LUNA_KEYSTORE_BASE64"
+          printf '%s' "$LUNA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/luna-release.jks"
+
+      - name: Signierte APK bauen
+        env:
+          LUNA_KEYSTORE_PATH: ${{ runner.temp }}/luna-release.jks
+          LUNA_KEYSTORE_PASSWORD: ${{ secrets.LUNA_KEYSTORE_PASSWORD }}
+          LUNA_KEY_ALIAS: ${{ secrets.LUNA_KEY_ALIAS }}
+          LUNA_KEY_PASSWORD: ${{ secrets.LUNA_KEY_PASSWORD }}
+        run: gradle :app:assembleRelease --stacktrace -PLUNA_BACKEND_URL="${{ secrets.LUNA_BACKEND_URL }}"
 
       - name: APK bereitstellen
         uses: actions/upload-artifact@v4
         with:
           name: Luna-Assistant-v1-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
