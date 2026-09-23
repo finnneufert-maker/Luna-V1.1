@@ -34,17 +34,17 @@ public class OverlayService extends Service {
         startForeground(7, n);
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        SpriteAtlasView image = new SpriteAtlasView(this);
+        Luna3DView image = new Luna3DView(this);
         image.setBackgroundResource(R.drawable.overlay_frame);
         int type = Build.VERSION.SDK_INT >= 26 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE;
-        WindowManager.LayoutParams p = new WindowManager.LayoutParams(dp(112), dp(160), type,
+        WindowManager.LayoutParams p = new WindowManager.LayoutParams(dp(150), dp(230), type,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
         p.gravity = Gravity.TOP | Gravity.START;
         android.content.SharedPreferences pos = getSharedPreferences("overlay_position", MODE_PRIVATE);
         p.x = pos.getInt("x", 20); p.y = pos.getInt("y", 250);
         image.setOnTouchListener(new DragListener(p));
         image.setOnClickListener(v -> {
-            setState("wave");
+            setState("knocking");
             inactivity.postDelayed(() -> {
                 startActivity(open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 setState("idle"); resetSleepTimer();
@@ -69,32 +69,25 @@ public class OverlayService extends Service {
         luna.animate().cancel();
         luna.setAlpha(1f); luna.setScaleX(1f); luna.setScaleY(1f); luna.setRotation(0f);
         String s = state == null ? "idle" : state;
-        SpriteAtlasView sprite = (SpriteAtlasView) luna;
+        Luna3DView model = (Luna3DView) luna;
+        model.setExpression(s);
         if ("listening".equals(s)) {
-            sprite.setFrame(1);
             luna.animate().scaleX(1.07f).scaleY(1.07f).setDuration(220).withEndAction(() ->
                     luna.animate().scaleX(1f).scaleY(1f).setDuration(220));
         } else if ("talking".equals(s)) {
-            sprite.setFrame(3);
             idleAnimator = ObjectAnimator.ofFloat(luna, "scaleX", 1f, 1.035f, 1f);
             idleAnimator.setDuration(520); idleAnimator.setRepeatCount(5); idleAnimator.start();
         } else if ("thinking".equals(s)) {
-            sprite.setFrame(2);
             idleAnimator = ObjectAnimator.ofFloat(luna, "rotation", -2f, 2f, -2f);
             idleAnimator.setDuration(850); idleAnimator.setRepeatCount(ValueAnimator.INFINITE); idleAnimator.start();
         } else if ("sleeping".equals(s)) {
-            sprite.setFrame(7);
             luna.animate().alpha(.68f).scaleX(.94f).scaleY(.94f).setDuration(600);
         } else if ("wave".equals(s)) {
-            sprite.setFrame(4);
             luna.animate().rotation(-2f).setDuration(180).withEndAction(() ->
                     luna.animate().rotation(2f).setDuration(180));
         } else if ("sitting".equals(s)) {
-            sprite.setFrame(5);
         } else if ("bowing".equals(s)) {
-            sprite.setFrame(6);
         } else {
-            sprite.setFrame(0);
             idleAnimator = ObjectAnimator.ofFloat(luna, "translationY", 0f, -10f, 0f);
             idleAnimator.setDuration(2400); idleAnimator.setRepeatCount(ValueAnimator.INFINITE); idleAnimator.start();
         }

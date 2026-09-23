@@ -39,11 +39,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(20),dp(18),dp(20),dp(30));
         root.setBackgroundColor(Color.rgb(23,19,38)); scroll.addView(root);
 
-        TextView title = text("Luna  •  Version 1.6", 25); root.addView(title);
-        TextView modelHint = text("3D-Ansicht: Ziehe Luna nach links oder rechts, um sie zu drehen.", 13);
+        TextView title = text("Luna  •  Version 1.8", 25); root.addView(title);
+        TextView modelHint = text("Echtes 3D: Ziehe Luna stufenlos nach links oder rechts, um sie vollständig zu drehen.", 13);
         modelHint.setTextColor(Color.LTGRAY); root.addView(modelHint);
         luna3d = new Luna3DView(this);
         root.addView(luna3d, new LinearLayout.LayoutParams(-1,dp(500)));
+        Button modelStyle = button("🐱 Zur Chibi-Variante wechseln", v -> {
+            boolean isChibi=luna3d.toggleChibi();
+            ((Button)v).setText(isChibi?"✨ Zur normalen Variante wechseln":"🐱 Zur Chibi-Variante wechseln");
+        });
+        root.addView(modelStyle);
 
         answer = text("Hallo! Ich kann sprechen, deine Notizen beantworten und Berichtsheft-Einträge lokal speichern.", 17);
         answer.setPadding(dp(14),dp(14),dp(14),dp(14)); answer.setBackgroundColor(Color.rgb(38,32,58)); root.addView(answer);
@@ -161,8 +166,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private void showPosePicker() {
         if (!Settings.canDrawOverlays(this)) { startOverlay(); return; }
-        String[] labels={"Stehen","Zuhören","Denken","Sprechen","Winken","Sitzen","Verbeugen","Schlafen"};
-        String[] states={"idle","listening","thinking","talking","wave","sitting","bowing","sleeping"};
+        String[] labels={"Stehen","Zuhören","Denken","Sprechen","Winken","Sitzen","Verbeugen","Schlafen","Niesen","An Bildschirm klopfen"};
+        String[] states={"idle","listening","thinking","talking","wave","sitting","bowing","sleeping","sneezing","knocking"};
         new AlertDialog.Builder(this).setTitle("Lunas Pose").setItems(labels,(d,which)->setLunaState(states[which])).show();
     }
 
