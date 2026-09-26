@@ -2,6 +2,7 @@ name: Luna APK bauen
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches: [ main ]
 
@@ -9,7 +10,68 @@ permissions:
   contents: read
 
 jobs:
+  preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - run: gradle :app:assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Luna-Modell-Vorschau
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Emulator beschleunigen
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Luna im Emulator starten und fotografieren
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_7
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant de.luna.assistant.v18 android.permission.POST_NOTIFICATIONS
+            adb shell am start -n de.luna.assistant.v18/de.luna.assistant.MainActivity
+            sleep 6
+            mkdir -p preview
+            adb shell screencap -p /sdcard/luna-main.png
+            adb pull /sdcard/luna-main.png preview/luna-main.png
+            adb shell input tap 450 1450
+            sleep 2
+            adb shell screencap -p /sdcard/luna-chibi.png
+            adb pull /sdcard/luna-chibi.png preview/luna-chibi.png
+            adb shell input swipe 300 800 675 800 650
+            sleep 2
+            adb shell screencap -p /sdcard/luna-chibi-back.png
+            adb pull /sdcard/luna-chibi-back.png preview/luna-chibi-back.png
+            adb shell input tap 450 1450
+            adb shell input swipe 300 800 487 800 450
+            sleep 2
+            adb shell screencap -p /sdcard/luna-regular-side.png
+            adb pull /sdcard/luna-regular-side.png preview/luna-regular-side.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Luna-Bildschirmansicht
+          path: preview/*.png
+          if-no-files-found: warn
+          retention-days: 7
   build:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
