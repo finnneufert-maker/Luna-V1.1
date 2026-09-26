@@ -30,6 +30,33 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+      - name: Emulator beschleunigen
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Luna im Emulator starten und fotografieren
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_7
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant de.luna.assistant.v18 android.permission.POST_NOTIFICATIONS
+            adb shell am start -n de.luna.assistant.v18/de.luna.assistant.MainActivity
+            sleep 6
+            mkdir -p preview
+            adb shell screencap -p /sdcard/luna-main.png
+            adb pull /sdcard/luna-main.png preview/luna-main.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Luna-Bildschirmansicht
+          path: preview/luna-main.png
+          if-no-files-found: warn
+          retention-days: 7
   build:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
