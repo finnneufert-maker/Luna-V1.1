@@ -22,6 +22,18 @@ final class OfflineAssistant {
         if (low.contains("was kannst du"))
             return "Ich kenne deine bisherigen Berichtsheft-Notizen von August 2025 bis September 2026, kann Monatsinhalte nennen, Tätigkeiten speichern und Formulierungen vorschlagen. Für völlig freie Wissensfragen brauchst du weiterhin einen sicheren KI-Server.";
 
+        if (low.contains("minecraft") || low.contains("bedrock"))
+            return "Ich soll später als eigene Mitspielerin deiner privaten Switch-Bedrock-Welt im lokalen Netzwerk beitreten, dir folgen, mit euch Abenteuer erleben und beim Bauen helfen. Diese Verbindung und eine sichtbare Spielfigur sind noch nicht fertig. Bis dahin kann ich Bauideen und Pläne mit dir ausarbeiten.";
+        if (low.contains("witz") || low.contains("scherz") || low.contains("zweideutig")) {
+            String[] jokes = {
+                "Warum ist der Creeper so schlecht im Verstecken? Weil er bei jeder Überraschung hochgeht.",
+                "Ich wollte einen pikanten Witz erzählen ... aber die Chili hat ihn mir aus der Hand genommen.",
+                "Was sagt Luna zum Ofen? Du machst mich ganz warm — ich meinte natürlich die Küche.",
+                "Warum flirtet der Kühlschrank mit der Suppe? Er will sie unbedingt wiedersehen, wenn sie abgekühlt ist."
+            };
+            return jokes[(low.hashCode() & Integer.MAX_VALUE) % jokes.length];
+        }
+
         if (low.contains("wiederkehr") || low.contains("regelmäßig") || low.contains("jeden monat"))
             return "Wiederkehrende Tätigkeiten: Gemüse schneiden, Ware für den nächsten Tag richten und vorbereiten, sicher und hygienisch arbeiten sowie reinigen und aufräumen.";
 
