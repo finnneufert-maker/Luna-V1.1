@@ -29,7 +29,7 @@ public final class Luna3DView extends GLSurfaceView {
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
         @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);cone=Mesh.cone();torso=Mesh.profile(new float[]{.72f,.94f,.68f,.88f},20);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);start=System.currentTimeMillis();}
-        @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);Matrix.frustumM(proj,0,-r,r,-1,1,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
+        @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
             float t=(System.currentTimeMillis()-start)/1000f,breath=(float)Math.sin(t*1.7f),sway=(float)Math.sin(t*.7f)*2,phase=t%4.4f;
