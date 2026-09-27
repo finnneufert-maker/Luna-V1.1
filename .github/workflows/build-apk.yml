@@ -49,26 +49,26 @@ jobs:
             sleep 10
             mkdir -p preview
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-main.png
             adb pull /sdcard/luna-main.png preview/luna-main.png
             adb shell input tap 540 1700
             sleep 2
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-chibi.png
             adb pull /sdcard/luna-chibi.png preview/luna-chibi.png
             adb shell input swipe 300 800 675 800 650
             sleep 2
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-chibi-back.png
             adb pull /sdcard/luna-chibi-back.png preview/luna-chibi-back.png
             adb shell input tap 540 1700
             adb shell input swipe 300 800 487 800 450
             sleep 2
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-regular-side.png
             adb pull /sdcard/luna-regular-side.png preview/luna-regular-side.png
             adb shell input swipe 300 800 675 800 650
@@ -82,13 +82,13 @@ jobs:
             adb shell input swipe 540 900 540 350 650
             sleep 2
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-top.png
             adb pull /sdcard/luna-top.png preview/luna-top.png
             adb shell input swipe 540 350 540 1500 650
             sleep 2
             adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1140 || true
             adb shell screencap -p /sdcard/luna-bottom.png
             adb pull /sdcard/luna-bottom.png preview/luna-bottom.png
       - uses: actions/upload-artifact@v4
