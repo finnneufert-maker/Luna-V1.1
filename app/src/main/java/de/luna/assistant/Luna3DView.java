@@ -23,12 +23,12 @@ public final class Luna3DView extends GLSurfaceView {
     private static final class LunaRenderer implements Renderer {
         private static final String VS="uniform mat4 m;attribute vec3 p;varying float l;void main(){vec3 n=normalize(p);l=.58+.42*max(dot(n,normalize(vec3(-.4,.8,1.))),0.);gl_Position=m*vec4(p,1.);}";
         private static final String FS="precision mediump float;uniform vec4 c;varying float l;void main(){gl_FragColor=vec4(c.rgb*l,c.a);}";
-        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,panel,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
+        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,leg,panel,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
         private final float[] proj=new float[16],view=new float[16],model=new float[16],tmp=new float[16],out=new float[16];
         private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, HIGHLIGHT={.96f,.94f,1,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(24);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();start=System.currentTimeMillis();}
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(32);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},32);limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},16);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},16);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();start=System.currentTimeMillis();}
         @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
@@ -71,8 +71,8 @@ public final class Luna3DView extends GLSurfaceView {
             // Tapered shoulders, waist and flared skirt keep a distinct human silhouette at every yaw.
             draw(torso,0,-.31f,0,w,h,.43f,0,0,0,DRESS);
             oval(0,-.55f,.01f,w*.77f,.065f,.31f,0,0,0,PURPLE);
-            draw(skirt,0,-.80f,0,skirtWidth,.30f,.51f,clothMotion*.35f,0,clothMotion,DRESS);
-            draw(skirt,0,-.93f,0,skirtWidth*.91f,.17f,.49f,clothMotion*.35f,0,clothMotion*.75f,DARK);
+            draw(skirt,0,-.80f,0,skirtWidth,.34f,.51f,clothMotion*.35f,0,clothMotion,DRESS);
+            draw(skirt,0,-1.04f,0,skirtWidth*.98f,.11f,.49f,clothMotion*.35f,0,clothMotion*.75f,DARK);
             oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
             draw(panel,0,-.34f,.48f,apron,.29f,.065f,0,0,0,APRON);
             draw(panel,0,-.78f,.53f,skirtWidth*.69f,.26f,.10f,clothMotion*.35f,0,clothMotion,APRON);
@@ -81,8 +81,8 @@ public final class Luna3DView extends GLSurfaceView {
                 oval(side*skirtWidth*.47f,-.81f,.54f,.018f,.25f,.025f,0,0,side*8,WHITE);
                 oval(side*skirtWidth*.61f,-.96f,.39f,.022f,.10f,.024f,0,0,side*19,DARK);
             }
-            oval(0,-1.07f,0,skirtWidth*1.45f,.025f,.49f,0,0,clothMotion,WHITE);
-            oval(0,-1.10f,0,skirtWidth*1.34f,.018f,.46f,0,0,clothMotion*.8f,APRON);
+            oval(0,-1.12f,0,skirtWidth*1.12f,.018f,.48f,0,0,clothMotion,WHITE);
+            oval(0,-1.14f,0,skirtWidth*1.06f,.014f,.46f,0,0,clothMotion*.8f,APRON);
             for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
                 draw(panel,px,-.91f,.36f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
             oval(-w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,-24,WHITE);
@@ -101,20 +101,20 @@ public final class Luna3DView extends GLSurfaceView {
         }
         private void legs(boolean small,float sway){
             float x=small?.18f:.22f,y=small?-1.12f:-1.55f,len=small?.3f:.55f;
-            draw(limb,-x,y,.02f,small?.12f:.125f,len,.12f,0,0,-sway,STOCK);
-            draw(limb,x,y,.02f,small?.12f:.125f,len,.12f,0,0,sway,STOCK);
+            draw(small?limb:leg,-x,y,.02f,small?.12f:.15f,len,.13f,0,0,-sway,STOCK);
+            draw(small?limb:leg,x,y,.02f,small?.12f:.15f,len,.13f,0,0,sway,STOCK);
             float sy=small?-1.38f:-2.08f;
             oval(-x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
             oval(x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
         }
         private void arms(boolean small,float sway,float knock,float wave){
-            float x=small?.53f:.49f, wristY=small?-.62f:-.72f;
+            float x=small?.53f:.43f, wristY=small?-.62f:-.72f;
             for(int side=-1;side<=1;side+=2){
-                float ax=side*x, handX=side*(small?.71f:.66f), thrust=knock*.31f;
+                float ax=side*x, handX=side*(small?.71f:.55f), thrust=knock*.31f;
                 float gesture=side>0&&"wave".equals(expression)?-.24f:0;
-                draw(limb,ax,-.18f+gesture*.35f,.015f,small?.15f:.115f,small?.22f:.20f,.13f,0,0,side*-12+sway,DRESS);
-                oval(ax,-.31f+gesture*.35f,.07f,.13f,.04f,.12f,0,0,0,WHITE);
-                draw(limb,side*(x+.06f),-.48f+gesture,.09f+thrust,.083f,small?.22f:.27f,.083f,0,0,side*-12+sway,DRESS);
+                draw(limb,ax,-.18f+gesture*.35f,.015f,small?.15f:.12f,small?.22f:.25f,.13f,0,0,side*-8+sway,DRESS);
+                oval(ax,-.40f+gesture*.35f,.07f,.10f,.045f,.11f,0,0,0,WHITE);
+                draw(limb,side*(x+.035f),-.55f+gesture,.09f+thrust,.083f,small?.22f:.19f,.083f,0,0,side*-7+sway,DRESS);
                 oval(handX,wristY+gesture,.15f+thrust,.095f,.045f,.09f,0,0,0,WHITE);
                 oval(handX,wristY-.10f+gesture,.18f+thrust,.092f,.12f,.045f,0,0,side*-5,SKIN);
                 for(int finger=0;finger<4;finger++){
@@ -211,8 +211,8 @@ public final class Luna3DView extends GLSurfaceView {
         }
         static Mesh bodyProfile(int sides){
             // Shoulder, waist and hip contours; depth differs from width at each ring.
-            float[]width={.74f,.91f,.81f,.65f,.88f};
-            float[]depth={.72f,.90f,.96f,.78f,1.01f};
+            float[]width={.24f,.65f,.92f,1f,.94f,.82f,.72f,.78f,.86f};
+            float[]depth={.45f,.65f,.80f,.87f,.88f,.78f,.70f,.78f,.90f};
             int rings=width.length,k=0;float[]v=new float[rings*(sides+1)*3];
             for(int r=0;r<rings;r++)for(int a=0;a<=sides;a++){
                 double angle=2*Math.PI*a/sides;
