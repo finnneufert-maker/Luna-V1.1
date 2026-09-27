@@ -78,21 +78,21 @@ public final class Luna3DView extends GLSurfaceView {
         }
         private void legs(boolean small,float sway){float x=small?.18f:.21f,y=small?-1.12f:-1.3f,len=small?.3f:.43f;draw(limb,-x,y,.02f,.12f,len,.12f,0,0,-sway,STOCK);draw(limb,x,y,.02f,.12f,len,.12f,0,0,sway,STOCK);float sy=small?-1.38f:-1.62f;oval(-x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);oval(x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);}
         private void arms(boolean small,float sway,float knock,float wave){
-            float x=small?.53f:.58f, wristY=small?-.57f:-.68f;
+            float x=small?.53f:.56f, wristY=small?-.62f:-.74f;
             for(int side=-1;side<=1;side+=2){
-                float ax=side*x, thrust=knock*.31f;
+                float ax=side*x, handX=side*(small?.71f:.76f), thrust=knock*.31f;
                 float gesture=side>0&&"wave".equals(expression)?-.24f:0;
                 oval(ax,-.16f+gesture*.35f,.02f,.18f,.23f,.17f,0,0,side*-12+sway,DRESS);
                 oval(ax,-.30f+gesture*.35f,.11f,.15f,.055f,.15f,0,0,0,WHITE);
-                oval(ax,-.45f+gesture,.06f+thrust,.105f,small?.20f:.25f,.10f,0,0,side*-8+sway,STOCK);
-                oval(ax,wristY+gesture,.075f+thrust,.12f,.055f,.11f,0,0,0,WHITE);
-                oval(ax,wristY-.09f+gesture,.085f+thrust,.125f,.13f,.07f,0,0,side*-9,SKIN);
+                oval(side*(x+.07f),-.47f+gesture,.06f+thrust,.105f,small?.22f:.27f,.10f,0,0,side*-19+sway,STOCK);
+                oval(handX,wristY+gesture,.075f+thrust,.12f,.055f,.11f,0,0,0,WHITE);
+                oval(handX,wristY-.09f+gesture,.085f+thrust,.125f,.13f,.07f,0,0,side*-9,SKIN);
                 for(int finger=0;finger<4;finger++){
-                    float fx=ax+(finger-1.5f)*.053f;
+                    float fx=handX+(finger-1.5f)*.053f;
                     oval(fx,wristY-.215f+gesture+(finger==0||finger==3?.012f:0),.105f+thrust,
                         .025f,.075f,.028f,0,0,side*-4,SKIN);
                 }
-                oval(ax-side*.13f,wristY-.065f+gesture,.12f+thrust,.038f,.075f,.038f,0,0,side*35,SKIN);
+                oval(handX-side*.13f,wristY-.065f+gesture,.12f+thrust,.038f,.075f,.038f,0,0,side*35,SKIN);
             }
         }
         private void head(boolean small,float y,float hx,float hz,float blink,float mouth,float sneeze,float tilt,float ears){
