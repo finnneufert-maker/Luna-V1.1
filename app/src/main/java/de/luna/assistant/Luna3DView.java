@@ -76,15 +76,22 @@ public final class Luna3DView extends GLSurfaceView {
             oval(0,-.17f,.35f,.03f,.03f,.02f,0,0,0,PURPLE);
             oval(0,-.33f,.35f,.03f,.03f,.02f,0,0,0,PURPLE);
         }
-        private void legs(boolean small,float sway){float x=small?.18f:.21f,y=small?-1.12f:-1.3f,len=small?.3f:.43f;draw(limb,-x,y,.02f,.12f,len,.12f,0,0,-sway,STOCK);draw(limb,x,y,.02f,.12f,len,.12f,0,0,sway,STOCK);float sy=small?-1.38f:-1.62f;oval(-x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);oval(x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);}
+        private void legs(boolean small,float sway){
+            float x=small?.18f:.22f,y=small?-1.12f:-1.55f,len=small?.3f:.55f;
+            draw(limb,-x,y,.02f,small?.12f:.125f,len,.12f,0,0,-sway,STOCK);
+            draw(limb,x,y,.02f,small?.12f:.125f,len,.12f,0,0,sway,STOCK);
+            float sy=small?-1.38f:-2.08f;
+            oval(-x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
+            oval(x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
+        }
         private void arms(boolean small,float sway,float knock,float wave){
-            float x=small?.53f:.56f, wristY=small?-.62f:-.74f;
+            float x=small?.53f:.50f, wristY=small?-.62f:-.78f;
             for(int side=-1;side<=1;side+=2){
-                float ax=side*x, handX=side*(small?.71f:.76f), thrust=knock*.31f;
+                float ax=side*x, handX=side*(small?.71f:.70f), thrust=knock*.31f;
                 float gesture=side>0&&"wave".equals(expression)?-.24f:0;
-                oval(ax,-.16f+gesture*.35f,.02f,.18f,.23f,.17f,0,0,side*-12+sway,DRESS);
+                oval(ax,-.16f+gesture*.35f,.02f,small?.18f:.15f,small?.23f:.20f,.15f,0,0,side*-12+sway,DRESS);
                 oval(ax,-.30f+gesture*.35f,.11f,.15f,.055f,.15f,0,0,0,WHITE);
-                oval(side*(x+.07f),-.47f+gesture,.06f+thrust,.105f,small?.22f:.27f,.10f,0,0,side*-19+sway,STOCK);
+                oval(side*(x+.07f),-.49f+gesture,.06f+thrust,.095f,small?.22f:.29f,.095f,0,0,side*-19+sway,STOCK);
                 oval(handX,wristY+gesture,.075f+thrust,.12f,.055f,.11f,0,0,0,WHITE);
                 oval(handX,wristY-.09f+gesture,.085f+thrust,.125f,.13f,.07f,0,0,side*-9,SKIN);
                 for(int finger=0;finger<4;finger++){
