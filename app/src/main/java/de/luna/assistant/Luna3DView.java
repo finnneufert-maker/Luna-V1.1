@@ -54,18 +54,18 @@ public final class Luna3DView extends GLSurfaceView {
             if(chibi)chibi(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);else regular(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);
         }
         private void regular(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
-            oval(0,.34f,-.22f,.50f,.77f,.32f,0,0,hairMotion*.35f,SILVER); oval(-.43f,.02f,-.18f,.18f,.72f,.18f,0,0,-4+hairMotion,DARK);oval(.43f,.02f,-.18f,.18f,.72f,.18f,0,0,4+hairMotion,DARK);body(.43f,.65f,.68f,.29f);legs(false,sway);arms(false,sway,knock,wave);head(false,.62f,.48f,.32f,blink,mouth,sneeze,tilt,ears);tail(t,false,sway);}
+            oval(0,.34f,-.31f,.47f,.77f,.25f,0,0,hairMotion*.35f,SILVER); oval(-.43f,.02f,-.23f,.14f,.68f,.13f,0,0,-4+hairMotion,DARK);oval(.43f,.02f,-.23f,.14f,.68f,.13f,0,0,4+hairMotion,DARK);body(.43f,.65f,.68f,.29f);legs(false,sway);arms(false,sway,knock,wave);head(false,.62f,.48f,.32f,blink,mouth,sneeze,tilt,ears);tail(t,false,sway);}
         private void chibi(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
             oval(0,.36f,-.2f,.75f,.78f,.43f,0,0,hairMotion*.35f,SILVER);oval(-.48f,.05f,-.17f,.2f,.54f,.19f,0,0,-5+hairMotion,DARK);oval(.48f,.05f,-.17f,.2f,.54f,.19f,0,0,5+hairMotion,DARK);body(.39f,.46f,.62f,.33f);legs(true,sway);arms(true,sway,knock,wave);head(true,.57f,.59f,.36f,blink,mouth,sneeze,tilt,ears);tail(t,true,sway);}
         private void body(float w,float h,float skirtWidth,float apron){
             // Tapered shoulders, waist and flared skirt keep a distinct human silhouette at every yaw.
-            draw(torso,0,-.31f,0,w,h,.34f,0,0,0,DRESS);
+            draw(torso,0,-.31f,0,w,h,.43f,0,0,0,DRESS);
             oval(0,-.55f,.01f,w*.77f,.065f,.31f,0,0,0,PURPLE);
-            draw(skirt,0,-.80f,0,skirtWidth,.30f,.40f,clothMotion*.35f,0,clothMotion,DRESS);
+            draw(skirt,0,-.80f,0,skirtWidth,.30f,.51f,clothMotion*.35f,0,clothMotion,DRESS);
             oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
-            draw(panel,0,-.34f,.365f,apron,.30f,.10f,0,0,0,APRON);
-            draw(panel,0,-.78f,.41f,skirtWidth*.69f,.26f,.12f,clothMotion*.35f,0,clothMotion,APRON);
-            oval(0,-1.07f,0,skirtWidth*1.45f,.035f,.39f,0,0,clothMotion,WHITE);
+            draw(panel,0,-.34f,.48f,apron,.29f,.065f,0,0,0,APRON);
+            draw(panel,0,-.78f,.53f,skirtWidth*.69f,.26f,.10f,clothMotion*.35f,0,clothMotion,APRON);
+            oval(0,-1.07f,0,skirtWidth*1.45f,.025f,.49f,0,0,clothMotion,WHITE);
             for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
                 draw(panel,px,-.91f,.36f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
             oval(-w*.58f,-.07f,.24f,.11f,.17f,.11f,0,0,-24,WHITE);
@@ -78,21 +78,21 @@ public final class Luna3DView extends GLSurfaceView {
         }
         private void legs(boolean small,float sway){float x=small?.18f:.21f,y=small?-1.12f:-1.3f,len=small?.3f:.43f;draw(limb,-x,y,.02f,.12f,len,.12f,0,0,-sway,STOCK);draw(limb,x,y,.02f,.12f,len,.12f,0,0,sway,STOCK);float sy=small?-1.38f:-1.62f;oval(-x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);oval(x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);}
         private void arms(boolean small,float sway,float knock,float wave){
-            float x=small?.47f:.5f, wristY=small?-.57f:-.68f;
+            float x=small?.53f:.58f, wristY=small?-.57f:-.68f;
             for(int side=-1;side<=1;side+=2){
                 float ax=side*x, thrust=knock*.31f;
                 float gesture=side>0&&"wave".equals(expression)?-.24f:0;
-                oval(ax,-.16f+gesture*.35f,.02f,.20f,.24f,.19f,0,0,side*-12+sway,DRESS);
+                oval(ax,-.16f+gesture*.35f,.02f,.18f,.23f,.17f,0,0,side*-12+sway,DRESS);
                 oval(ax,-.30f+gesture*.35f,.11f,.15f,.055f,.15f,0,0,0,WHITE);
                 oval(ax,-.45f+gesture,.06f+thrust,.105f,small?.20f:.25f,.10f,0,0,side*-8+sway,STOCK);
                 oval(ax,wristY+gesture,.075f+thrust,.12f,.055f,.11f,0,0,0,WHITE);
-                oval(ax,wristY-.09f+gesture,.085f+thrust,.105f,.115f,.065f,0,0,side*-9,SKIN);
+                oval(ax,wristY-.09f+gesture,.085f+thrust,.125f,.13f,.07f,0,0,side*-9,SKIN);
                 for(int finger=0;finger<4;finger++){
-                    float fx=ax+(finger-1.5f)*.044f;
-                    oval(fx,wristY-.185f+gesture+(finger==0||finger==3?.015f:0),.10f+thrust,
-                        .019f,.063f,.022f,0,0,side*-4,SKIN);
+                    float fx=ax+(finger-1.5f)*.053f;
+                    oval(fx,wristY-.215f+gesture+(finger==0||finger==3?.012f:0),.105f+thrust,
+                        .025f,.075f,.028f,0,0,side*-4,SKIN);
                 }
-                oval(ax-side*.105f,wristY-.055f+gesture,.12f+thrust,.035f,.065f,.032f,0,0,side*30,SKIN);
+                oval(ax-side*.13f,wristY-.065f+gesture,.12f+thrust,.038f,.075f,.038f,0,0,side*35,SKIN);
             }
         }
         private void head(boolean small,float y,float hx,float hz,float blink,float mouth,float sneeze,float tilt,float ears){
@@ -149,8 +149,8 @@ public final class Luna3DView extends GLSurfaceView {
         static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix);}
         static Mesh bodyProfile(int sides){
             // Shoulder, waist and hip contours; depth differs from width at each ring.
-            float[]width={.74f,.93f,.82f,.62f,.88f};
-            float[]depth={.72f,.97f,1.10f,.74f,.94f};
+            float[]width={.74f,.91f,.81f,.65f,.88f};
+            float[]depth={.72f,.90f,.96f,.78f,1.01f};
             int rings=width.length,k=0;float[]v=new float[rings*(sides+1)*3];
             for(int r=0;r<rings;r++)for(int a=0;a<=sides;a++){
                 double angle=2*Math.PI*a/sides;
