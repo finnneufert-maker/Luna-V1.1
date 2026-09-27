@@ -28,7 +28,7 @@ public final class Luna3DView extends GLSurfaceView {
         private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);cone=Mesh.cone();torso=Mesh.profile(new float[]{.72f,.94f,.68f,.88f},20);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);panel=Mesh.panel();start=System.currentTimeMillis();}
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);cone=Mesh.cone();torso=Mesh.bodyProfile(24);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);panel=Mesh.panel();start=System.currentTimeMillis();}
         @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
@@ -60,11 +60,16 @@ public final class Luna3DView extends GLSurfaceView {
         private void body(float w,float h,float skirtWidth,float apron){
             // Tapered shoulders, waist and flared skirt keep a distinct human silhouette at every yaw.
             draw(torso,0,-.31f,0,w,h,.34f,0,0,0,DRESS);
+            oval(0,-.55f,.01f,w*.77f,.065f,.31f,0,0,0,PURPLE);
             draw(skirt,0,-.80f,0,skirtWidth,.30f,.40f,clothMotion*.35f,0,clothMotion,DRESS);
             oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
             draw(panel,0,-.34f,.365f,apron,.30f,.10f,0,0,0,APRON);
             draw(panel,0,-.78f,.41f,skirtWidth*.69f,.26f,.12f,clothMotion*.35f,0,clothMotion,APRON);
-            oval(0,-1.07f,0,skirtWidth*1.48f,.035f,.39f,0,0,clothMotion,WHITE);
+            oval(0,-1.07f,0,skirtWidth*1.45f,.035f,.39f,0,0,clothMotion,WHITE);
+            for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
+                draw(panel,px,-.91f,.36f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
+            oval(-w*.58f,-.07f,.24f,.11f,.17f,.11f,0,0,-24,WHITE);
+            oval(w*.58f,-.07f,.24f,.11f,.17f,.11f,0,0,24,WHITE);
             oval(-w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,-18,-16,PURPLE);
             oval(w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,18,16,PURPLE);
             oval(0,-.38f,-.4f,.1f,.1f,.07f,0,0,0,WHITE);
@@ -72,7 +77,24 @@ public final class Luna3DView extends GLSurfaceView {
             oval(0,-.33f,.35f,.03f,.03f,.02f,0,0,0,PURPLE);
         }
         private void legs(boolean small,float sway){float x=small?.18f:.21f,y=small?-1.12f:-1.3f,len=small?.3f:.43f;draw(limb,-x,y,.02f,.12f,len,.12f,0,0,-sway,STOCK);draw(limb,x,y,.02f,.12f,len,.12f,0,0,sway,STOCK);float sy=small?-1.38f:-1.62f;oval(-x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);oval(x,sy,.12f,.18f,.11f,.27f,0,0,0,SHOE);}
-        private void arms(boolean small,float sway,float knock,float wave){float x=small?.47f:.5f,y=small?-.31f:-.28f,l=small?.37f:.52f,w=small?.12f:.13f;oval(-x,y,.04f+knock*.35f,w,l,w,0,0,12+sway-knock*35,SKIN);oval(x,y+("wave".equals(expression)?.28f:0),.04f+knock*.35f,w,l,w,0,0,("wave".equals(expression)?-82+wave:-12-sway)+knock*35,SKIN);oval(-x*.86f,y+.27f,.01f,w*1.55f,.16f,w*1.4f,0,0,12+sway,DRESS);oval(x*.86f,y+.27f,.01f,w*1.55f,.16f,w*1.4f,0,0,-12-sway,DRESS);}
+        private void arms(boolean small,float sway,float knock,float wave){
+            float x=small?.47f:.5f, wristY=small?-.57f:-.68f;
+            for(int side=-1;side<=1;side+=2){
+                float ax=side*x, thrust=knock*.31f;
+                float gesture=side>0&&"wave".equals(expression)?-.24f:0;
+                oval(ax,-.16f+gesture*.35f,.02f,.20f,.24f,.19f,0,0,side*-12+sway,DRESS);
+                oval(ax,-.30f+gesture*.35f,.11f,.15f,.055f,.15f,0,0,0,WHITE);
+                oval(ax,-.45f+gesture,.06f+thrust,.105f,small?.20f:.25f,.10f,0,0,side*-8+sway,STOCK);
+                oval(ax,wristY+gesture,.075f+thrust,.12f,.055f,.11f,0,0,0,WHITE);
+                oval(ax,wristY-.09f+gesture,.085f+thrust,.105f,.115f,.065f,0,0,side*-9,SKIN);
+                for(int finger=0;finger<4;finger++){
+                    float fx=ax+(finger-1.5f)*.044f;
+                    oval(fx,wristY-.185f+gesture+(finger==0||finger==3?.015f:0),.10f+thrust,
+                        .019f,.063f,.022f,0,0,side*-4,SKIN);
+                }
+                oval(ax-side*.105f,wristY-.055f+gesture,.12f+thrust,.035f,.065f,.032f,0,0,side*30,SKIN);
+            }
+        }
         private void head(boolean small,float y,float hx,float hz,float blink,float mouth,float sneeze,float tilt,float ears){
             float eyeX=small?.25f:.22f, ey=small?.57f:.68f;
             float faceZ=small?.56f:.50f;
@@ -125,6 +147,25 @@ public final class Luna3DView extends GLSurfaceView {
         void draw(int p){v.position(0);i.position(0);GLES20.glEnableVertexAttribArray(p);GLES20.glVertexAttribPointer(p,3,GLES20.GL_FLOAT,false,12,v);GLES20.glDrawElements(GLES20.GL_TRIANGLES,n,GLES20.GL_UNSIGNED_SHORT,i);GLES20.glDisableVertexAttribArray(p);}
         static Mesh sphere(int a,int b){float[]v=new float[(a+1)*(b+1)*3];int k=0;for(int x=0;x<=a;x++){double q=Math.PI*x/a;for(int y=0;y<=b;y++){double r=2*Math.PI*y/b;v[k++]=(float)(Math.sin(q)*Math.cos(r));v[k++]=(float)Math.cos(q);v[k++]=(float)(Math.sin(q)*Math.sin(r));}}short[]z=new short[a*b*6];k=0;for(int x=0;x<a;x++)for(int y=0;y<b;y++){short u=(short)(x*(b+1)+y),w=(short)(u+b+1);z[k++]=u;z[k++]=(short)(u+1);z[k++]=w;z[k++]=(short)(w+1);z[k++]=w;z[k++]=(short)(u+1);}return new Mesh(v,z);}
         static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix);}
+        static Mesh bodyProfile(int sides){
+            // Shoulder, waist and hip contours; depth differs from width at each ring.
+            float[]width={.74f,.93f,.82f,.62f,.88f};
+            float[]depth={.72f,.97f,1.10f,.74f,.94f};
+            int rings=width.length,k=0;float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++)for(int a=0;a<=sides;a++){
+                double angle=2*Math.PI*a/sides;
+                v[k++]=(float)Math.cos(angle)*width[r];
+                v[k++]=1f-2f*r/(rings-1f);
+                v[k++]=(float)Math.sin(angle)*depth[r];
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int a=0;a<sides;a++){
+                short top=(short)(r*(sides+1)+a),bottom=(short)(top+sides+1);
+                ix[k++]=top;ix[k++]=(short)(top+1);ix[k++]=bottom;
+                ix[k++]=(short)(top+1);ix[k++]=(short)(bottom+1);ix[k++]=bottom;
+            }
+            return new Mesh(v,ix);
+        }
         static Mesh panel(){
             // A curved, double-sided fabric panel instead of a spherical apron.
             int rows=8, cols=10;float[]v=new float[(rows+1)*(cols+1)*3];int k=0;
