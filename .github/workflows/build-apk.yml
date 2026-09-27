@@ -50,7 +50,7 @@ jobs:
             mkdir -p preview
             adb shell screencap -p /sdcard/luna-main.png
             adb pull /sdcard/luna-main.png preview/luna-main.png
-            adb shell input tap 450 1450
+            adb shell input tap 540 1700
             sleep 2
             adb shell screencap -p /sdcard/luna-chibi.png
             adb pull /sdcard/luna-chibi.png preview/luna-chibi.png
@@ -58,7 +58,7 @@ jobs:
             sleep 2
             adb shell screencap -p /sdcard/luna-chibi-back.png
             adb pull /sdcard/luna-chibi-back.png preview/luna-chibi-back.png
-            adb shell input tap 450 1450
+            adb shell input tap 540 1700
             adb shell input swipe 300 800 487 800 450
             sleep 2
             adb shell screencap -p /sdcard/luna-regular-side.png
