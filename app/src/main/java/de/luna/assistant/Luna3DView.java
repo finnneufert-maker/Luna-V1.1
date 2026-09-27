@@ -23,12 +23,12 @@ public final class Luna3DView extends GLSurfaceView {
     private static final class LunaRenderer implements Renderer {
         private static final String VS="uniform mat4 m;attribute vec3 p;varying float l;void main(){vec3 n=normalize(p);l=.58+.42*max(dot(n,normalize(vec3(-.4,.8,1.))),0.);gl_Position=m*vec4(p,1.);}";
         private static final String FS="precision mediump float;uniform vec4 c;varying float l;void main(){gl_FragColor=vec4(c.rgb*l,c.a);}";
-        private int program,pos,mvp,color; private Mesh ball,cone,torso,skirt,limb,panel; private long start; volatile String expression="idle"; volatile float yaw; volatile boolean chibi;
+        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,panel; private long start; volatile String expression="idle"; volatile float yaw; volatile boolean chibi;
         private final float[] proj=new float[16],view=new float[16],model=new float[16],tmp=new float[16],out=new float[16];
         private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);cone=Mesh.cone();torso=Mesh.bodyProfile(24);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);panel=Mesh.panel();start=System.currentTimeMillis();}
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(24);skirt=Mesh.profile(new float[]{.72f,.94f,1.38f,1.55f},24);limb=Mesh.profile(new float[]{.85f,1f,.92f,.72f},12);panel=Mesh.panel();start=System.currentTimeMillis();}
         @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
@@ -54,7 +54,7 @@ public final class Luna3DView extends GLSurfaceView {
             if(chibi)chibi(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);else regular(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);
         }
         private void regular(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
-            oval(0,.34f,-.31f,.47f,.77f,.25f,0,0,hairMotion*.35f,SILVER); oval(-.43f,.02f,-.23f,.14f,.68f,.13f,0,0,-4+hairMotion,DARK);oval(.43f,.02f,-.23f,.14f,.68f,.13f,0,0,4+hairMotion,DARK);body(.43f,.65f,.68f,.29f);legs(false,sway);arms(false,sway,knock,wave);head(false,.62f,.48f,.32f,blink,mouth,sneeze,tilt,ears);tail(t,false,sway);}
+            oval(0,.39f,-.23f,.37f,.69f,.23f,0,0,hairMotion*.35f,SILVER); oval(-.36f,.11f,-.18f,.12f,.58f,.12f,0,0,-4+hairMotion,DARK);oval(.36f,.11f,-.18f,.12f,.58f,.12f,0,0,4+hairMotion,DARK);body(.46f,.69f,.61f,.28f);legs(false,sway);arms(false,sway,knock,wave);head(false,.72f,.38f,.29f,blink,mouth,sneeze,tilt,ears);tail(t,false,sway);}
         private void chibi(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
             oval(0,.36f,-.2f,.75f,.78f,.43f,0,0,hairMotion*.35f,SILVER);oval(-.48f,.05f,-.17f,.2f,.54f,.19f,0,0,-5+hairMotion,DARK);oval(.48f,.05f,-.17f,.2f,.54f,.19f,0,0,5+hairMotion,DARK);body(.39f,.46f,.62f,.33f);legs(true,sway);arms(true,sway,knock,wave);head(true,.57f,.59f,.36f,blink,mouth,sneeze,tilt,ears);tail(t,true,sway);}
         private void body(float w,float h,float skirtWidth,float apron){
@@ -68,8 +68,8 @@ public final class Luna3DView extends GLSurfaceView {
             oval(0,-1.07f,0,skirtWidth*1.45f,.025f,.49f,0,0,clothMotion,WHITE);
             for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
                 draw(panel,px,-.91f,.36f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
-            oval(-w*.58f,-.07f,.24f,.11f,.17f,.11f,0,0,-24,WHITE);
-            oval(w*.58f,-.07f,.24f,.11f,.17f,.11f,0,0,24,WHITE);
+            oval(-w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,-24,WHITE);
+            oval(w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,24,WHITE);
             oval(-w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,-18,-16,PURPLE);
             oval(w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,18,16,PURPLE);
             oval(0,-.38f,-.4f,.1f,.1f,.07f,0,0,0,WHITE);
@@ -96,21 +96,22 @@ public final class Luna3DView extends GLSurfaceView {
             }
         }
         private void head(boolean small,float y,float hx,float hz,float blink,float mouth,float sneeze,float tilt,float ears){
-            float eyeX=small?.25f:.22f, ey=small?.57f:.68f;
-            float faceZ=small?.56f:.50f;
-            oval(0,y-sneeze*.06f,.23f+sneeze*.1f,hx,small?.61f:.44f,hz,sneeze*10,0,tilt,SKIN);
-            oval(0,y+.36f,.02f,hx*1.05f,small?.38f:.30f,hz*1.05f,0,0,tilt,SILVER);
+            float eyeX=small?.25f:.17f, ey=small?.57f:.77f;
+            float faceZ=small?.56f:.49f;
+            draw(small?ball:face,0,y-sneeze*.06f,.23f+sneeze*.1f,hx,small?.61f:.39f,hz,sneeze*10,0,tilt,SKIN);
+            if(!small) oval(0,.32f,.16f,.10f,.14f,.10f,0,0,0,SKIN);
+            oval(0,y+(small?.36f:.31f),.02f,hx*1.05f,small?.38f:.23f,hz*1.05f,0,0,tilt,SILVER);
             // Layers of hair frame the face, move slightly, and remain attached when turning.
-            oval(-hx*.68f,y+.13f,.17f,.14f,small?.41f:.32f,.13f,0,0,-15+hairMotion*.25f,SILVER);
-            oval(hx*.68f,y+.13f,.17f,.14f,small?.41f:.32f,.13f,0,0,15+hairMotion*.25f,SILVER);
-            oval(-hx*.35f,y+.27f,.37f,hx*.26f,.19f,.08f,0,0,-19+tilt,DARK);
-            oval(hx*.35f,y+.27f,.37f,hx*.26f,.19f,.08f,0,0,19+tilt,DARK);
-            float ex=small?.43f:.37f, eyear=small?1.42f:1.35f;
-            cone(-ex,eyear,.08f,small?.3f:.27f,small?.38f:.34f,.12f,0,-7-ears,tilt-4,SILVER);
-            cone(ex,eyear,.08f,small?.3f:.27f,small?.38f:.34f,.12f,0,7+ears,tilt+4,SILVER);
-            cone(-ex,eyear-.03f,.2f,small?.17f:.15f,small?.22f:.19f,.08f,0,-7-ears,tilt-4,PINK);
-            cone(ex,eyear-.03f,.2f,small?.17f:.15f,small?.22f:.19f,.08f,0,7+ears,tilt+4,PINK);
-            float eyeW=small?.14f:.115f, eyeH=small?.085f:.075f;
+            oval(-hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,-15+hairMotion*.25f,SILVER);
+            oval(hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,15+hairMotion*.25f,SILVER);
+            oval(-hx*.35f,y+.25f,.38f,hx*.26f,small?.19f:.12f,.06f,0,0,-19+tilt,DARK);
+            oval(hx*.35f,y+.25f,.38f,hx*.26f,small?.19f:.12f,.06f,0,0,19+tilt,DARK);
+            float ex=small?.43f:.29f, eyear=small?1.42f:1.37f;
+            cone(-ex,eyear,.08f,small?.3f:.19f,small?.38f:.26f,.12f,0,-7-ears,tilt-4,SILVER);
+            cone(ex,eyear,.08f,small?.3f:.19f,small?.38f:.26f,.12f,0,7+ears,tilt+4,SILVER);
+            cone(-ex,eyear-.03f,.2f,small?.17f:.11f,small?.22f:.15f,.08f,0,-7-ears,tilt-4,PINK);
+            cone(ex,eyear-.03f,.2f,small?.17f:.11f,small?.22f:.15f,.08f,0,7+ears,tilt+4,PINK);
+            float eyeW=small?.14f:.085f, eyeH=small?.085f:.052f;
             oval(-eyeX,ey,faceZ,eyeW,eyeH*blink,.022f,0,0,tilt,WHITE);
             oval(eyeX,ey,faceZ,eyeW,eyeH*blink,.022f,0,0,tilt,WHITE);
             if(blink>.18f){
@@ -123,9 +124,10 @@ public final class Luna3DView extends GLSurfaceView {
             }
             oval(-eyeX,ey+.13f,faceZ-.025f,eyeW*.8f,.018f,.018f,0,0,-8+tilt,DARK);
             oval(eyeX,ey+.13f,faceZ-.025f,eyeW*.8f,.018f,.018f,0,0,8+tilt,DARK);
-            oval(0,ey-.18f,faceZ+.015f,.034f,.022f,.025f,0,0,0,PINK);
-            oval(0,ey-.31f,faceZ+.018f,.068f,mouth,.02f,0,0,tilt,MOUTH);
-            oval(0,eyear-.2f,-.02f,small?.63f:.56f,.09f,small?.4f:.35f,0,0,tilt,WHITE);
+            oval(0,ey-.14f,faceZ+.015f,.025f,.045f,.025f,0,0,0,SKIN);
+            oval(0,ey-.21f,faceZ+.035f,.024f,.012f,.016f,0,0,0,PINK);
+            oval(0,ey-.29f,faceZ+.025f,.055f,mouth*.7f,.016f,0,0,tilt,MOUTH);
+            oval(0,eyear-.2f,-.02f,small?.63f:.42f,.065f,small?.4f:.28f,0,0,tilt,WHITE);
         }
         private void tail(float t,boolean small,float sway){
             float x=small?.49f:.57f,y=small?-.68f:-.78f;
@@ -147,6 +149,26 @@ public final class Luna3DView extends GLSurfaceView {
         void draw(int p){v.position(0);i.position(0);GLES20.glEnableVertexAttribArray(p);GLES20.glVertexAttribPointer(p,3,GLES20.GL_FLOAT,false,12,v);GLES20.glDrawElements(GLES20.GL_TRIANGLES,n,GLES20.GL_UNSIGNED_SHORT,i);GLES20.glDisableVertexAttribArray(p);}
         static Mesh sphere(int a,int b){float[]v=new float[(a+1)*(b+1)*3];int k=0;for(int x=0;x<=a;x++){double q=Math.PI*x/a;for(int y=0;y<=b;y++){double r=2*Math.PI*y/b;v[k++]=(float)(Math.sin(q)*Math.cos(r));v[k++]=(float)Math.cos(q);v[k++]=(float)(Math.sin(q)*Math.sin(r));}}short[]z=new short[a*b*6];k=0;for(int x=0;x<a;x++)for(int y=0;y<b;y++){short u=(short)(x*(b+1)+y),w=(short)(u+b+1);z[k++]=u;z[k++]=(short)(u+1);z[k++]=w;z[k++]=(short)(w+1);z[k++]=w;z[k++]=(short)(u+1);}return new Mesh(v,z);}
         static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix);}
+        static Mesh faceProfile(int sides){
+            // Rounded forehead and cheeks narrow gradually into a jaw and chin.
+            float[] ys={1f,.82f,.43f,.05f,-.43f,-.78f,-1f};
+            float[] widths={.38f,.78f,.98f,1f,.88f,.62f,.27f};
+            float[] depths={.48f,.8f,.96f,1f,.9f,.7f,.42f};
+            int rings=ys.length,k=0;float[] verts=new float[rings*(sides+1)*3];
+            for(int ring=0;ring<rings;ring++)for(int side=0;side<=sides;side++){
+                double angle=2*Math.PI*side/sides;
+                verts[k++]=(float)Math.cos(angle)*widths[ring];
+                verts[k++]=ys[ring];
+                verts[k++]=(float)Math.sin(angle)*depths[ring];
+            }
+            short[] indices=new short[(rings-1)*sides*6];k=0;
+            for(int ring=0;ring<rings-1;ring++)for(int side=0;side<sides;side++){
+                short a=(short)(ring*(sides+1)+side),b=(short)(a+sides+1);
+                indices[k++]=a;indices[k++]=(short)(a+1);indices[k++]=b;
+                indices[k++]=(short)(a+1);indices[k++]=(short)(b+1);indices[k++]=b;
+            }
+            return new Mesh(verts,indices);
+        }
         static Mesh bodyProfile(int sides){
             // Shoulder, waist and hip contours; depth differs from width at each ring.
             float[]width={.74f,.91f,.81f,.65f,.88f};
