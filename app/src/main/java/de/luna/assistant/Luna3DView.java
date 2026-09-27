@@ -75,16 +75,16 @@ public final class Luna3DView extends GLSurfaceView {
             draw(skirt,0,-1.04f,0,skirtWidth*.98f,.11f,.49f,clothMotion*.35f,0,clothMotion*.75f,DARK);
             oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
             draw(panel,0,-.34f,.48f,apron,.29f,.065f,0,0,0,APRON);
-            draw(panel,0,-.78f,.53f,skirtWidth*.69f,.26f,.10f,clothMotion*.35f,0,clothMotion,APRON);
+            draw(panel,0,-.78f,.65f,skirtWidth*.69f,.29f,.10f,clothMotion*.35f,0,clothMotion,APRON);
             // Fabric folds and a small apron border break up the flat white panel.
             for(int side=-1;side<=1;side+=2){
-                oval(side*skirtWidth*.47f,-.81f,.54f,.018f,.25f,.025f,0,0,side*8,WHITE);
-                oval(side*skirtWidth*.61f,-.96f,.39f,.022f,.10f,.024f,0,0,side*19,DARK);
+                oval(side*skirtWidth*.47f,-.81f,.67f,.018f,.27f,.025f,0,0,side*8,WHITE);
+                oval(side*skirtWidth*.61f,-.96f,.49f,.022f,.10f,.024f,0,0,side*19,DARK);
             }
             oval(0,-1.12f,0,skirtWidth*1.12f,.018f,.48f,0,0,clothMotion,WHITE);
             oval(0,-1.14f,0,skirtWidth*1.06f,.014f,.46f,0,0,clothMotion*.8f,APRON);
             for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
-                draw(panel,px,-.91f,.36f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
+                draw(panel,px,-.91f,.68f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
             oval(-w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,-24,WHITE);
             oval(w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,24,WHITE);
             oval(-w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,-18,-16,PURPLE);
@@ -108,13 +108,14 @@ public final class Luna3DView extends GLSurfaceView {
             oval(x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
         }
         private void arms(boolean small,float sway,float knock,float wave){
-            float x=small?.53f:.43f, wristY=small?-.62f:-.72f;
+            float x=small?.53f:.45f, wristY=small?-.62f:-.77f;
             for(int side=-1;side<=1;side+=2){
-                float ax=side*x, handX=side*(small?.71f:.55f), thrust=knock*.31f;
+                float ax=side*x, handX=side*(small?.71f:.66f), thrust=knock*.31f;
                 float gesture=side>0&&"wave".equals(expression)?-.24f:0;
+                if(!small)oval(ax,.035f,.025f,.15f,.14f,.15f,0,0,side*12,DRESS);
                 draw(limb,ax,-.18f+gesture*.35f,.015f,small?.15f:.12f,small?.22f:.25f,.13f,0,0,side*-8+sway,DRESS);
                 oval(ax,-.40f+gesture*.35f,.07f,.10f,.045f,.11f,0,0,0,WHITE);
-                draw(limb,side*(x+.035f),-.55f+gesture,.09f+thrust,.083f,small?.22f:.19f,.083f,0,0,side*-7+sway,DRESS);
+                draw(limb,side*(x+.10f),-.57f+gesture,.09f+thrust,.083f,small?.22f:.21f,.083f,0,0,side*-11+sway,DRESS);
                 oval(handX,wristY+gesture,.15f+thrust,.095f,.045f,.09f,0,0,0,WHITE);
                 oval(handX,wristY-.10f+gesture,.18f+thrust,.092f,.12f,.045f,0,0,side*-5,SKIN);
                 for(int finger=0;finger<4;finger++){
