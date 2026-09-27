@@ -134,11 +134,14 @@ public final class Luna3DView extends GLSurfaceView {
             // Layers of hair frame the face, move slightly, and remain attached when turning.
             oval(-hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,-15+hairMotion*.25f,SILVER);
             oval(hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,15+hairMotion*.25f,SILVER);
-            oval(-hx*.35f,y+.24f,.52f,hx*.26f,small?.19f:.115f,.055f,0,0,-19+tilt,SILVER);
-            oval(hx*.35f,y+.24f,.52f,hx*.26f,small?.19f:.115f,.055f,0,0,19+tilt,SILVER);
-            if(!small){
-                draw(hairLock,-.09f,y+.31f,.50f,.075f,.16f,.047f,0,0,24+tilt,HIGHLIGHT);
-                draw(hairLock,.09f,y+.31f,.50f,.075f,.16f,.047f,0,0,-24+tilt,SILVER);
+            if(small){
+                oval(-hx*.35f,y+.24f,.52f,hx*.26f,.19f,.055f,0,0,-19+tilt,SILVER);
+                oval(hx*.35f,y+.24f,.52f,hx*.26f,.19f,.055f,0,0,19+tilt,SILVER);
+            }else{
+                for(int i=-2;i<=2;i++){
+                    draw(hairLock,i*.11f,y+.33f,.485f,.062f,.15f,.040f,0,0,-i*8+tilt,
+                        i%2==0?SILVER:HIGHLIGHT);
+                }
                 for(int side=-1;side<=1;side+=2){
                     draw(hairLock,side*.36f,y-.14f,.39f,.073f,.54f,.085f,0,0,side*(5+hairMotion*.22f),SILVER);
                     draw(hairLock,side*.32f,y-.19f,.47f,.038f,.43f,.043f,0,0,side*9,HIGHLIGHT);
