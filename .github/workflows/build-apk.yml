@@ -47,33 +47,28 @@ jobs:
             adb shell pm grant de.luna.assistant.v18 android.permission.POST_NOTIFICATIONS
             adb shell am start -n de.luna.assistant.v18/de.luna.assistant.MainActivity
             sleep 10
-            # Dismiss a sporadic headless launcher dialog before capture.
-            dismiss_launcher_dialog() {
-              adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
-              if adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding"; then
-                adb shell input tap 300 1335
-                sleep 3
-              fi
-            }
-            dismiss_launcher_dialog
             mkdir -p preview
-            dismiss_launcher_dialog
+            adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
             adb shell screencap -p /sdcard/luna-main.png
             adb pull /sdcard/luna-main.png preview/luna-main.png
             adb shell input tap 540 1700
             sleep 2
-            dismiss_launcher_dialog
+            adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
             adb shell screencap -p /sdcard/luna-chibi.png
             adb pull /sdcard/luna-chibi.png preview/luna-chibi.png
             adb shell input swipe 300 800 675 800 650
             sleep 2
-            dismiss_launcher_dialog
+            adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
             adb shell screencap -p /sdcard/luna-chibi-back.png
             adb pull /sdcard/luna-chibi-back.png preview/luna-chibi-back.png
             adb shell input tap 540 1700
             adb shell input swipe 300 800 487 800 450
             sleep 2
-            dismiss_launcher_dialog
+            adb shell uiautomator dump /sdcard/luna-window.xml >/dev/null 2>&1 || true
+            adb shell cat /sdcard/luna-window.xml 2>/dev/null | grep -q "Quickstep isn't responding" && adb shell input tap 300 1335 || true
             adb shell screencap -p /sdcard/luna-regular-side.png
             adb pull /sdcard/luna-regular-side.png preview/luna-regular-side.png
       - uses: actions/upload-artifact@v4
