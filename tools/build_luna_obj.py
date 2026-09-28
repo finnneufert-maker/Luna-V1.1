@@ -45,8 +45,8 @@ def surface(obj,name,mat,rows,sides,fn,closed=False):
             faces.extend(((len(verts)-2,j,(j+1)%sides),((rows-1)*sides+j,len(verts)-1,(rows-1)*sides+(j+1)%sides)))
     obj.mesh(name,mat,verts,faces)
 
-def ellipsoid(obj,name,mat,x,y,z,rx,ry,rz):
-    surface(obj,name,mat,14,20,lambda t,a:(x+rx*sin(pi*t)*cos(a),y+ry*cos(pi*t),z+rz*sin(pi*t)*sin(a)))
+def ellipsoid(obj,name,mat,x,y,z,rx,ry,rz,rows=14,sides=20):
+    surface(obj,name,mat,rows,sides,lambda t,a:(x+rx*sin(pi*t)*cos(a),y+ry*cos(pi*t),z+rz*sin(pi*t)*sin(a)))
 
 def loft(obj,name,mat,rings,steps=28):
     # Hand-defined radial cross sections: (Y, width, depth, Z center).
@@ -116,13 +116,30 @@ def build(chibi=False):
     for i in range(-3,4):
         x=i*.085
         tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.32),(x*.98,1.00,.47),(x*.95,.88+(abs(i)%2)*.055,.53)],[.068,.076,.005],10)
+    for i in range(-5,6):
+        x=i*.051
+        tube(o,'hair_fine_bang_'+str(i),'hairlight',
+             [(x,1.09,.41),(x+.008*sin(i),.98,.515),(x+.012*sin(i),.86+(abs(i)%3)*.035,.54)],
+             [.009,.011,.002],6)
     # Layered long hair remains visible from behind, down to the waist.
     for i in range(-3,4):
         x=i*(.11 if chibi else .09)
         tube(o,'hair_rear_'+str(i),'hairlight' if i in (-2,1) else 'hair',
              [(x*.75,1.01,-.29),(x,.63,-.37),(x*1.08,.20,-.39),(x*1.10,-.20,-.38),(x*1.04,-.58,-.34)],
              [.055,.087,.095,.07,.004],10)
-    ellipsoid(o,'nose','skin',0,.62,.55 if chibi else .495,.023,.025,.019)
+    for i in range(-5,6):
+        x=i*(.065 if chibi else .052)
+        tube(o,'hair_fine_rear_'+str(i),'hairlight',
+             [(x,.89,-.38),(x+.01*sin(i),.48,-.47),(x+.016*sin(i),.02,-.49),
+              (x+.025*sin(i),-.40,-.44),(x+.028*sin(i),-.65,-.34)],
+             [.009,.013,.014,.011,.002],6)
+    # The bridge and shallow triangular cat nose read as a nose in profile.
+    nose_z=.055 if chibi else 0
+    tube(o,'nose_bridge','skin',[(0,.70,.485+nose_z),(0,.65,.515+nose_z),(0,.60,.535+nose_z)],
+         [.014,.021,.027],10)
+    o.mesh('nose_tip','pink',[(0,.607,.553+nose_z),(-.037,.583,.553+nose_z),
+                              (.037,.583,.553+nose_z),(0,.575,.575+nose_z)],
+           [(0,1,3),(0,3,2),(1,2,3)])
     ellipsoid(o,'mouth','pink',0,.51,.54 if chibi else .481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
     loft(o,'dress','dress',[(.28,.17,.16,0),(.10,.34,.22,0),(-.20,.38,.25,0),(-.48,.29,.22,0),(-.62,.31,.24,0),(-.78,.42,.32,0),(-.96,.56,.40,0),(-1.10,.61,.43,0),(-1.15,.60,.42,0)],32)
@@ -153,9 +170,17 @@ def build(chibi=False):
         tube(o,'cuff_'+str(side),'apron',[(side*.55,-.60,.09),(side*.57,-.65,.09)],[.088,.084],16)
         ellipsoid(o,'palm_'+str(side),'skin',side*.59,-.75,.12,.077,.13,.039)
         for finger in range(4):
-            fx=side*.59+(finger-1.5)*.033
-            tube(o,'finger_'+str(side)+'_'+str(finger),'skin',[(fx,-.80,.135),(fx,-.91+(finger%3)*.013,.14)],[.014,.010],8)
-        tube(o,'thumb_'+str(side),'skin',[(side*.65,-.76,.15),(side*.71,-.83,.15)],[.020,.010],8)
+            fx=side*.59+(finger-1.5)*.037
+            length=(.088,.115,.107,.080)[finger]
+            tube(o,'finger_'+str(side)+'_'+str(finger),'skin',
+                 [(fx,-.805,.137),(fx+(finger-1.5)*.003,-.805-length*.56,.146),
+                  (fx+(finger-1.5)*.006,-.805-length,.149)],
+                 [.017,.015,.011],10)
+            ellipsoid(o,'nail_'+str(side)+'_'+str(finger),'nail',
+                      fx+(finger-1.5)*.006,-.805-length+.015,.162,.012,.020,.004,7,10)
+        tube(o,'thumb_'+str(side),'skin',[(side*.65,-.755,.15),(side*.69,-.80,.157),
+                                          (side*.71,-.84,.16)],[.022,.019,.012],10)
+        ellipsoid(o,'nail_thumb_'+str(side),'nail',side*.71,-.83,.174,.010,.016,.004,7,10)
         tube(o,'leg_'+str(side),'stock',[(side*.19,-1.07,.02),(side*.20,-1.39,.01),(side*.20,-1.73,.02),(side*.20,-2.04,.03)],[.147,.142,.125,.113])
         ellipsoid(o,'shoe_'+str(side),'black',side*.20,-2.10,.13,.155,.095,.24)
     # Chest bow is ribbon shaped instead of two large spherical bumps.
