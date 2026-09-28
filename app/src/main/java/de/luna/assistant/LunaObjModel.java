@@ -31,6 +31,7 @@ final class LunaObjModel {
         String partName="body",material="dress";
         HashMap<String,float[]> palette=new HashMap<>();
         palette.put("skin",new float[]{.98f,.79f,.75f,1});palette.put("hair",new float[]{.85f,.85f,.95f,1});
+        palette.put("nail",new float[]{1f,.84f,.85f,1});
         palette.put("hairlight",new float[]{.96f,.95f,1,1});palette.put("dress",new float[]{.065f,.045f,.11f,1});
         palette.put("apron",new float[]{.93f,.94f,1,1});palette.put("purple",new float[]{.43f,.16f,.61f,1});
         palette.put("pink",new float[]{.87f,.48f,.63f,1});palette.put("eye",new float[]{.47f,.16f,.78f,1});
