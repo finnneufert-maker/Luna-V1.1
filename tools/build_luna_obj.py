@@ -80,39 +80,41 @@ def tube(obj,name,mat,points,radii,sides=10):
             faces.extend(((a,c,b),(b,c,d)))
     obj.mesh(name,mat,vertices,faces)
 
-def cat_ear(obj,side,scale):
-    x=side*.28*scale;base=1.12*scale;z=.01*scale
+def cat_ear(obj,side,scale,chibi=False):
+    x=side*(.38 if chibi else .29)*scale;base=1.08*scale;z=-.025*scale
     def shape(t,a):
-        width=(.20*(1-t)**.72+.012)*scale;depth=(.115*(1-t)+.015)*scale
-        return (x+side*.12*t*scale+width*cos(a),base+.42*t*scale,z+.05*t*scale+depth*sin(a))
+        width=(.17*(1-t*t)**.7+.018)*scale;depth=(.10*(1-t)+.018)*scale
+        return (x+side*.07*t*scale+width*cos(a),base+.34*t*scale,z+.03*t*scale+depth*sin(a))
     surface(obj,'ear_'+str(side),'hair',9,20,shape)
     # Pink inner ear follows the forward face, with a rounded top.
     def inner(t,a):
-        width=(.13*(1-t)**.7+.005)*scale
-        return (x+side*.12*t*scale+width*cos(a),base+(.035+.31*t)*scale,(.13+.03*t)*scale+.006*scale*sin(a))
+        width=(.105*(1-t*t)**.7+.004)*scale
+        return (x+side*.07*t*scale+width*cos(a),base+(.035+.25*t)*scale,(.105+.025*t)*scale+.006*scale*sin(a))
     surface(obj,'ear_inner_'+str(side),'pink',8,16,inner)
 
 def build(chibi=False):
     o=Obj(chibi);s=1 if not chibi else .94
     # A narrowed jaw and continuous back of head, with silver hair behind it.
-    ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.39*s,.49*s,.30*s)
+    ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.53 if chibi else .39*s,.49*s,.31*s)
     loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.29*s,.20*s,.17*s),(.85*s,.36*s,.27*s,.20*s),(.65*s,.37*s,.29*s,.20*s),(.46*s,.31*s,.24*s,.18*s),(.32*s,.21*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.38,.23,.18),(.82,.49,.31,.20),(.63,.52,.33,.20),(.45,.45,.27,.18),(.33,.29,.18,.16),(.29,.10,.09,.14)])
     for side in (-1,1):
-        cat_ear(o,side,1)
+        cat_ear(o,side,1,chibi)
         eyeX=.19 if not chibi else .27;eyeY=.75 if not chibi else .73
-        ellipsoid(o,'eye_white_'+str(side),'white',side*eyeX,eyeY,.482,.107,.071,.026)
-        ellipsoid(o,'iris_'+str(side),'eye',side*eyeX,eyeY,.509,.061,.064,.014)
-        ellipsoid(o,'pupil_'+str(side),'black',side*eyeX,eyeY,.522,.018,.052,.008)
-        ellipsoid(o,'eyelight_'+str(side),'white',side*eyeX-.02,eyeY+.027,.531,.020,.021,.006)
-        tube(o,'eyelash_'+str(side),'black',[(side*(eyeX-.10),eyeY+.069,.51),(side*eyeX,eyeY+.078,.51),(side*(eyeX+.10),eyeY+.060,.49)],[.009,.015,.006],8)
-        tube(o,'eyebrow_'+str(side),'hairlight',[(side*(eyeX-.09),eyeY+.15,.44),(side*eyeX,eyeY+.16,.45),(side*(eyeX+.09),eyeY+.14,.43)],[.011,.016,.007],8)
-        tube(o,'hair_front_'+str(side),'hair',[(side*.33,1.05,.20),(side*.38,.82,.28),(side*.36,.55,.23),(side*.35,.30,.08)],[.09,.095,.068,.008])
-        tube(o,'hair_back_'+str(side),'hair',[(side*.25,.97,-.24),(side*.40,.60,-.25),(side*.41,.14,-.25),(side*.37,-.13,-.19)],[.12,.13,.10,.008])
+        eyeDepth=.055 if chibi else 0
+        ellipsoid(o,'eye_white_'+str(side),'white',side*eyeX,eyeY,.482+eyeDepth,.107,.071,.020)
+        ellipsoid(o,'iris_'+str(side),'eye',side*eyeX,eyeY,.503+eyeDepth,.061,.064,.012)
+        ellipsoid(o,'pupil_'+str(side),'black',side*eyeX,eyeY,.515+eyeDepth,.018,.052,.007)
+        ellipsoid(o,'eyelight_'+str(side),'white',side*eyeX-.02,eyeY+.027,.523+eyeDepth,.020,.021,.005)
+        tube(o,'eyelash_'+str(side),'black',[(side*(eyeX-.10),eyeY+.069,.505+eyeDepth),(side*eyeX,eyeY+.078,.505+eyeDepth),(side*(eyeX+.10),eyeY+.060,.485+eyeDepth)],[.009,.015,.006],8)
+        tube(o,'eyebrow_'+str(side),'hairlight',[(side*(eyeX-.09),eyeY+.15,.44+eyeDepth),(side*eyeX,eyeY+.16,.45+eyeDepth),(side*(eyeX+.09),eyeY+.14,.43+eyeDepth)],[.011,.016,.007],8)
+        hairX=.47 if chibi else .34
+        tube(o,'hair_front_'+str(side),'hair',[(side*hairX,1.05,.12),(side*(hairX+.025),.82,.13),(side*(hairX+.025),.55,.12),(side*hairX,.30,.04)],[.085,.09,.065,.008])
+        tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
     for i in range(-3,4):
         x=i*.085
         tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.32),(x*.98,1.00,.47),(x*.95,.88+(abs(i)%2)*.055,.53)],[.068,.076,.005],10)
-    ellipsoid(o,'nose','skin',0,.62,.495,.023,.025,.019)
-    ellipsoid(o,'mouth','pink',0,.51,.481,.051,.012,.008)
+    ellipsoid(o,'nose','skin',0,.62,.55 if chibi else .495,.023,.025,.019)
+    ellipsoid(o,'mouth','pink',0,.51,.54 if chibi else .481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
     loft(o,'dress','dress',[(.28,.17,.16,0),(.10,.34,.22,0),(-.20,.38,.25,0),(-.48,.29,.22,0),(-.62,.31,.24,0),(-.78,.42,.32,0),(-.96,.56,.40,0),(-1.10,.61,.43,0),(-1.15,.60,.42,0)],32)
     # Curved apron panel lies on the dress and follows its flare.
