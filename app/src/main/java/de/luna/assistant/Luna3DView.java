@@ -21,14 +21,14 @@ public final class Luna3DView extends GLSurfaceView {
     @Override public boolean performClick(){super.performClick();return true;}
 
     private static final class LunaRenderer implements Renderer {
-        private static final String VS="uniform mat4 m;attribute vec3 p;varying float l;void main(){vec3 n=normalize(p);l=.58+.42*max(dot(n,normalize(vec3(-.4,.8,1.))),0.);gl_Position=m*vec4(p,1.);}";
-        private static final String FS="precision mediump float;uniform vec4 c;varying float l;void main(){gl_FragColor=vec4(c.rgb*l,c.a);}";
-        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,leg,panel,apronSkirt,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
+        private static final String VS="uniform mat4 m;uniform mat4 nm;attribute vec3 p;attribute vec3 normal;varying float l;varying float rim;void main(){vec3 n=normalize((nm*vec4(normal,0.)).xyz);l=.57+.43*max(dot(n,normalize(vec3(-.45,.78,1.))),0.);rim=pow(1.-max(dot(n,vec3(0.,0.,1.)),0.),2.);gl_Position=m*vec4(p,1.);}";
+        private static final String FS="precision mediump float;uniform vec4 c;varying float l;varying float rim;void main(){gl_FragColor=vec4(min(c.rgb*l+vec3(.045*rim),vec3(1.)),c.a);}";
+        private int program,pos,norm,mvp,normalMatrix,color; private Mesh ball,face,cone,torso,skirt,limb,leg,panel,apronSkirt,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
         private final float[] proj=new float[16],view=new float[16],model=new float[16],tmp=new float[16],out=new float[16];
         private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, HIGHLIGHT={.96f,.94f,1,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(32);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},32);limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},16);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},16);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();apronSkirt=Mesh.apronSkirt();start=System.currentTimeMillis();}
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");norm=GLES20.glGetAttribLocation(program,"normal");mvp=GLES20.glGetUniformLocation(program,"m");normalMatrix=GLES20.glGetUniformLocation(program,"nm");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(32);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},32);limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},16);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},16);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();apronSkirt=Mesh.apronSkirt();start=System.currentTimeMillis();}
         @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
@@ -174,15 +174,28 @@ public final class Luna3DView extends GLSurfaceView {
             }
         }
         private void oval(float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){draw(ball,x,y,z,sx,sy,sz,rx,ry,rz,c);}private void cone(float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){draw(cone,x,y,z,sx,sy,sz,rx,ry,rz,c);}
-        private void draw(Mesh mesh,float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){Matrix.setIdentityM(model,0);Matrix.rotateM(model,0,yaw,0,1,0);Matrix.rotateM(model,0,pitch,1,0,0);Matrix.translateM(model,0,0,poseY,0);Matrix.rotateM(model,0,poseX,1,0,0);Matrix.rotateM(model,0,poseZ,0,0,1);Matrix.translateM(model,0,x,y,z);Matrix.rotateM(model,0,rx,1,0,0);Matrix.rotateM(model,0,ry,0,1,0);Matrix.rotateM(model,0,rz,0,0,1);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(tmp,0,view,0,model,0);Matrix.multiplyMM(out,0,proj,0,tmp,0);GLES20.glUniformMatrix4fv(mvp,1,false,out,0);GLES20.glUniform4f(color,c[0],c[1],c[2],c[3]);mesh.draw(pos);}
+        private void draw(Mesh mesh,float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){Matrix.setIdentityM(model,0);Matrix.rotateM(model,0,yaw,0,1,0);Matrix.rotateM(model,0,pitch,1,0,0);Matrix.translateM(model,0,0,poseY,0);Matrix.rotateM(model,0,poseX,1,0,0);Matrix.rotateM(model,0,poseZ,0,0,1);Matrix.translateM(model,0,x,y,z);Matrix.rotateM(model,0,rx,1,0,0);Matrix.rotateM(model,0,ry,0,1,0);Matrix.rotateM(model,0,rz,0,0,1);GLES20.glUniformMatrix4fv(normalMatrix,1,false,model,0);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(tmp,0,view,0,model,0);Matrix.multiplyMM(out,0,proj,0,tmp,0);GLES20.glUniformMatrix4fv(mvp,1,false,out,0);GLES20.glUniform4f(color,c[0],c[1],c[2],c[3]);mesh.draw(pos,norm);}
         private static int link(String a,String b){int x=compile(GLES20.GL_VERTEX_SHADER,a),y=compile(GLES20.GL_FRAGMENT_SHADER,b),p=GLES20.glCreateProgram();GLES20.glAttachShader(p,x);GLES20.glAttachShader(p,y);GLES20.glLinkProgram(p);return p;}private static int compile(int t,String s){int x=GLES20.glCreateShader(t);GLES20.glShaderSource(x,s);GLES20.glCompileShader(x);return x;}
     }
     private static final class Mesh {
-        final FloatBuffer v;final ShortBuffer i;final int n;
-        Mesh(float[]a,short[]b){v=ByteBuffer.allocateDirect(a.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();v.put(a).position(0);i=ByteBuffer.allocateDirect(b.length*2).order(ByteOrder.nativeOrder()).asShortBuffer();i.put(b).position(0);n=b.length;}
-        void draw(int p){v.position(0);i.position(0);GLES20.glEnableVertexAttribArray(p);GLES20.glVertexAttribPointer(p,3,GLES20.GL_FLOAT,false,12,v);GLES20.glDrawElements(GLES20.GL_TRIANGLES,n,GLES20.GL_UNSIGNED_SHORT,i);GLES20.glDisableVertexAttribArray(p);}
+        final FloatBuffer v,normals;final ShortBuffer i;final int n;
+        Mesh(float[]a,short[]b){this(a,b,0);}
+        Mesh(float[]a,short[]b,int surface){
+            v=ByteBuffer.allocateDirect(a.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();v.put(a).position(0);
+            float[]ns=new float[a.length];
+            for(int j=0;j<a.length;j+=3){
+                float x=surface==2?0:a[j],y=surface==0?a[j+1]:0,z=surface==2?1:a[j+2];
+                if(surface==1||surface==3)y=0;
+                float length=(float)Math.sqrt(x*x+y*y+z*z);
+                if(length<.0001f){x=0;y=1;z=0;length=1;}
+                ns[j]=x/length;ns[j+1]=y/length;ns[j+2]=z/length;
+            }
+            normals=ByteBuffer.allocateDirect(ns.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();normals.put(ns).position(0);
+            i=ByteBuffer.allocateDirect(b.length*2).order(ByteOrder.nativeOrder()).asShortBuffer();i.put(b).position(0);n=b.length;
+        }
+        void draw(int p,int normal){v.position(0);normals.position(0);i.position(0);GLES20.glEnableVertexAttribArray(p);GLES20.glVertexAttribPointer(p,3,GLES20.GL_FLOAT,false,12,v);GLES20.glEnableVertexAttribArray(normal);GLES20.glVertexAttribPointer(normal,3,GLES20.GL_FLOAT,false,12,normals);GLES20.glDrawElements(GLES20.GL_TRIANGLES,n,GLES20.GL_UNSIGNED_SHORT,i);GLES20.glDisableVertexAttribArray(normal);GLES20.glDisableVertexAttribArray(p);}
         static Mesh sphere(int a,int b){float[]v=new float[(a+1)*(b+1)*3];int k=0;for(int x=0;x<=a;x++){double q=Math.PI*x/a;for(int y=0;y<=b;y++){double r=2*Math.PI*y/b;v[k++]=(float)(Math.sin(q)*Math.cos(r));v[k++]=(float)Math.cos(q);v[k++]=(float)(Math.sin(q)*Math.sin(r));}}short[]z=new short[a*b*6];k=0;for(int x=0;x<a;x++)for(int y=0;y<b;y++){short u=(short)(x*(b+1)+y),w=(short)(u+b+1);z[k++]=u;z[k++]=(short)(u+1);z[k++]=w;z[k++]=(short)(w+1);z[k++]=w;z[k++]=(short)(u+1);}return new Mesh(v,z);}
-        static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix);}
+        static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix,1);}
         static Mesh faceProfile(int sides){
             // Rounded forehead and cheeks narrow gradually into a jaw and chin.
             float[] ys={1f,.82f,.43f,.05f,-.43f,-.78f,-1f};
@@ -201,7 +214,7 @@ public final class Luna3DView extends GLSurfaceView {
                 indices[k++]=a;indices[k++]=(short)(a+1);indices[k++]=b;
                 indices[k++]=(short)(a+1);indices[k++]=(short)(b+1);indices[k++]=b;
             }
-            return new Mesh(verts,indices);
+            return new Mesh(verts,indices,1);
         }
         static Mesh bodyProfile(int sides){
             // Shoulder, waist and hip contours; depth differs from width at each ring.
@@ -220,7 +233,7 @@ public final class Luna3DView extends GLSurfaceView {
                 ix[k++]=top;ix[k++]=(short)(top+1);ix[k++]=bottom;
                 ix[k++]=(short)(top+1);ix[k++]=(short)(bottom+1);ix[k++]=bottom;
             }
-            return new Mesh(v,ix);
+            return new Mesh(v,ix,1);
         }
         static Mesh apronSkirt(){
             // The apron follows the skirt's curved front instead of floating as a flat rectangle.
@@ -243,7 +256,7 @@ public final class Luna3DView extends GLSurfaceView {
                 ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=a;
                 ix[k++]=(short)(b+1);ix[k++]=b;ix[k++]=(short)(a+1);
             }
-            return new Mesh(v,ix);
+            return new Mesh(v,ix,3);
         }
         static Mesh panel(){
             // A curved, double-sided fabric panel instead of a spherical apron.
@@ -260,7 +273,7 @@ public final class Luna3DView extends GLSurfaceView {
                 ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=a;
                 ix[k++]=(short)(b+1);ix[k++]=b;ix[k++]=(short)(a+1);
             }
-            return new Mesh(v,ix);
+            return new Mesh(v,ix,2);
         }
         static Mesh cone(){float[]v={0,1,0,-1,-1,1,1,-1,1,1,-1,-1,-1,-1,-1};short[]i={0,1,2,0,2,3,0,3,4,0,4,1,1,4,3,1,3,2};return new Mesh(v,i);}
     }
