@@ -83,6 +83,16 @@ final class LunaObjModel {
                 Matrix.translateM(transform,0,-.48f,.70f,.28f);
             }
             if(part.name.startsWith("hair"))Matrix.rotateM(transform,0,(float)Math.sin(time*1.1f)*.4f,0,0,1);
+            if(part.name.startsWith("eye_")||part.name.startsWith("iris_")||part.name.startsWith("pupil_")||part.name.startsWith("eyelight_")||part.name.startsWith("eyelash_")){
+                Matrix.translateM(transform,0,0,.75f,0);
+                Matrix.scaleM(transform,0,1,Math.max(.06f,blink),1);
+                Matrix.translateM(transform,0,0,-.75f,0);
+            }
+            if(part.name.equals("mouth")){
+                Matrix.translateM(transform,0,0,.51f,0);
+                Matrix.scaleM(transform,0,1,1+speech*8f,1);
+                Matrix.translateM(transform,0,0,-.51f,0);
+            }
             GLES20.glUniformMatrix4fv(normalMatrix,1,false,transform,0);
             Matrix.multiplyMM(tmp,0,view,0,transform,0);Matrix.multiplyMM(mvp,0,projection,0,tmp,0);
             GLES20.glUniformMatrix4fv(matrix,1,false,mvp,0);
