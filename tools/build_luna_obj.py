@@ -11,16 +11,18 @@ class Obj:
         self.normal_count=0
     def mesh(self,name,mat,vertices,faces):
         self.lines += [f'o {name}',f'usemtl {mat}']
-        normals=[]
+        normals=[[0.,0.,0.] for _ in vertices]
         for a,b,c in faces:
             p,q,r=(vertices[i] for i in (a,b,c))
             u=[q[i]-p[i] for i in range(3)];v=[r[i]-p[i] for i in range(3)]
             n=(u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]);length=sqrt(sum(x*x for x in n)) or 1
-            normals.append(tuple(x/length for x in n))
+            for corner in (a,b,c):
+                for axis in range(3):normals[corner][axis]+=n[axis]/length
+        normals=[tuple(x/(sqrt(sum(y*y for y in n)) or 1) for x in n) for n in normals]
         for p in vertices:self.lines.append('v %.5f %.5f %.5f'%tuple(p))
         for n in normals:self.lines.append('vn %.5f %.5f %.5f'%n)
-        for j,(a,b,c) in enumerate(faces):
-            self.lines.append('f '+' '.join(f'{self.count+i+1}//{self.normal_count+j+1}' for i in (a,b,c)))
+        for a,b,c in faces:
+            self.lines.append('f '+' '.join(f'{self.count+i+1}//{self.normal_count+i+1}' for i in (a,b,c)))
         self.count += len(vertices)
         self.normal_count += len(normals)
     def save(self,path):
@@ -88,7 +90,7 @@ def build(chibi=False):
     ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.39*s,.49*s,.30*s)
     loft(o,'face','skin',[(1.10*s,.23*s,.18*s,.18*s),(.99*s,.33*s,.25*s,.19*s),(.75*s,.38*s,.28*s,.20*s),(.48*s,.34*s,.25*s,.19*s),(.27*s,.18*s,.16*s,.17*s)] if not chibi else [(1.10,.28,.18,.19),(.97,.48,.31,.20),(.72,.55,.35,.20),(.45,.48,.28,.20),(.30,.25,.17,.18)])
     for side in (-1,1):
-        cat_ear(o,side,1.20 if chibi else 1)
+        cat_ear(o,side,1)
         eyeX=.19 if not chibi else .27;eyeY=.75 if not chibi else .73
         ellipsoid(o,'eye_white_'+str(side),'white',side*eyeX,eyeY,.482,.107,.071,.026)
         ellipsoid(o,'iris_'+str(side),'eye',side*eyeX,eyeY,.509,.061,.064,.014)
@@ -100,7 +102,7 @@ def build(chibi=False):
         tube(o,'hair_back_'+str(side),'hair',[(side*.25,.97,-.24),(side*.40,.60,-.25),(side*.41,.14,-.25),(side*.37,-.13,-.19)],[.12,.13,.10,.008])
     for i in range(-3,4):
         x=i*.085
-        tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.21),(x*.98,1.00,.36),(x*.95,.88+(abs(i)%2)*.055,.42)],[.068,.076,.005],10)
+        tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.32),(x*.98,1.00,.47),(x*.95,.88+(abs(i)%2)*.055,.53)],[.068,.076,.005],10)
     ellipsoid(o,'nose','skin',0,.62,.495,.023,.025,.019)
     ellipsoid(o,'mouth','pink',0,.51,.481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
@@ -114,7 +116,7 @@ def build(chibi=False):
             verts.append((w*sin(u),y,depth*cos(u)+.012))
     for i in range(rows):
         for j in range(cols):
-            a=i*(cols+1)+j;b=a+1;c=a+cols+1;d=c+1;faces.extend(((a,b,c),(b,d,c)))
+            a=i*(cols+1)+j;b=a+1;c=a+cols+1;d=c+1;faces.extend(((a,c,b),(b,c,d)))
     o.mesh('apron','apron',verts,faces)
     tube(o,'hem','apron',[(.60*cos(2*pi*i/64),-1.15+.018*cos(i*pi/4),.42*sin(2*pi*i/64)) for i in range(65)],[.035]*65,8)
     for side in (-1,1):
