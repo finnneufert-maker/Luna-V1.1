@@ -112,6 +112,9 @@ def build(chibi=False):
         tube(o,'eyebrow_'+str(side),'hairlight',[(side*(eyeX-.09),eyeY+.15,.44+eyeDepth),(side*eyeX,eyeY+.16,.45+eyeDepth),(side*(eyeX+.09),eyeY+.14,.43+eyeDepth)],[.011,.016,.007],8)
         hairX=.47 if chibi else .34
         tube(o,'hair_front_'+str(side),'hair',[(side*hairX,1.05,.12),(side*(hairX+.025),.82,.13),(side*(hairX+.025),.55,.12),(side*hairX,.30,.04)],[.085,.09,.065,.008])
+        # Cover the exposed side of the face; Luna only has the cat ears above her head.
+        tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX-.03),1.00,.14),(side*(hairX+.005),.82,.20),(side*(hairX+.015),.61,.19),(side*(hairX+.01),.39,.15)],
+             [.055,.095,.095,.008],12)
         tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
     for i in range(-3,4):
         x=i*.085
