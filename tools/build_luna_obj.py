@@ -5,11 +5,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1] / 'app/src/main/assets'
 
 class Obj:
-    def __init__(self):
+    def __init__(self,chibi=False):
         self.lines=['# Luna Yamanaka: sculptable mesh asset. Coordinates: Y up, Z front.']
+        self.chibi=chibi
         self.count=0
         self.normal_count=0
     def mesh(self,name,mat,vertices,faces):
+        if self.chibi and not (name.startswith(('hair','face','ear','eye','iris','pupil','eyelash','eyebrow','nose','mouth'))):
+            # Shorter limbs and skirt, while the oversized head keeps its own shape.
+            vertices=[(x*.86, .28+(y-.28)*.72, z*.89) for x,y,z in vertices]
         self.lines += [f'o {name}',f'usemtl {mat}']
         normals=[[0.,0.,0.] for _ in vertices]
         for a,b,c in faces:
@@ -48,11 +52,15 @@ def loft(obj,name,mat,rings,steps=28):
     # Hand-defined radial cross sections: (Y, width, depth, Z center).
     def fn(t,a):
         at=t*(len(rings)-1);i=min(len(rings)-2,int(at));u=at-i
-        smooth=u*u*(3-2*u)
-        values=[rings[i][k]*(1-smooth)+rings[i+1][k]*smooth for k in range(4)]
+        # Cubic interpolation avoids the flat ridges from stopping at each ring.
+        values=[]
+        for k in range(4):
+            p0=rings[max(0,i-1)][k];p1=rings[i][k]
+            p2=rings[i+1][k];p3=rings[min(len(rings)-1,i+2)][k]
+            values.append(.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u*u*u))
         y,w,d,z=values
         return (w*cos(a),y,z+d*sin(a))
-    surface(obj,name,mat,(len(rings)-1)*3+1,steps,fn,True)
+    surface(obj,name,mat,(len(rings)-1)*5+1,steps,fn,True)
 
 def tube(obj,name,mat,points,radii,sides=10):
     # Curved strands, limbs, and tail are continuous tapered tubes.
@@ -85,10 +93,10 @@ def cat_ear(obj,side,scale):
     surface(obj,'ear_inner_'+str(side),'pink',8,16,inner)
 
 def build(chibi=False):
-    o=Obj();s=1 if not chibi else .94
+    o=Obj(chibi);s=1 if not chibi else .94
     # A narrowed jaw and continuous back of head, with silver hair behind it.
     ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.39*s,.49*s,.30*s)
-    loft(o,'face','skin',[(1.10*s,.23*s,.18*s,.18*s),(.99*s,.33*s,.25*s,.19*s),(.75*s,.38*s,.28*s,.20*s),(.48*s,.34*s,.25*s,.19*s),(.27*s,.18*s,.16*s,.17*s)] if not chibi else [(1.10,.28,.18,.19),(.97,.48,.31,.20),(.72,.55,.35,.20),(.45,.48,.28,.20),(.30,.25,.17,.18)])
+    loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.29*s,.20*s,.17*s),(.85*s,.36*s,.27*s,.20*s),(.65*s,.37*s,.29*s,.20*s),(.46*s,.31*s,.24*s,.18*s),(.32*s,.21*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.38,.23,.18),(.82,.49,.31,.20),(.63,.52,.33,.20),(.45,.45,.27,.18),(.33,.29,.18,.16),(.29,.10,.09,.14)])
     for side in (-1,1):
         cat_ear(o,side,1)
         eyeX=.19 if not chibi else .27;eyeY=.75 if not chibi else .73
