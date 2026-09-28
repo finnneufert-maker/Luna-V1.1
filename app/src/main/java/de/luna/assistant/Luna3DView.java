@@ -180,13 +180,24 @@ public final class Luna3DView extends GLSurfaceView {
     }
     private static final class Mesh {
         final FloatBuffer v,normals;final ShortBuffer i;final int n;
-        Mesh(float[]a,short[]b){this(a,b,0);}
-        Mesh(float[]a,short[]b,int surface){
+        Mesh(float[]a,short[]b){this(a,b,0,0);}
+        Mesh(float[]a,short[]b,int surface){this(a,b,surface,0);}
+        Mesh(float[]a,short[]b,int surface,int sides){
             v=ByteBuffer.allocateDirect(a.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();v.put(a).position(0);
             float[]ns=new float[a.length];
             for(int j=0;j<a.length;j+=3){
                 float x=surface==2?0:a[j],y=surface==0?a[j+1]:0,z=surface==2?1:a[j+2];
                 if(surface==1||surface==3)y=0;
+                if(surface==1&&sides>0){
+                    int ring=j/3/(sides+1),column=j/3%(sides+1),rings=a.length/3/(sides+1);
+                    int prev=Math.max(0,ring-1)*(sides+1)*3+column*3;
+                    int next=Math.min(rings-1,ring+1)*(sides+1)*3+column*3;
+                    float dy=a[prev+1]-a[next+1];
+                    float dx=dy==0?0:(a[prev]-a[next])/dy;
+                    float dz=dy==0?0:(a[prev+2]-a[next+2])/dy;
+                    float radius=(float)Math.sqrt(x*x+z*z);
+                    if(radius>.0001f){x/=radius;z/=radius;y=-(x*dx+z*dz);}
+                }
                 float length=(float)Math.sqrt(x*x+y*y+z*z);
                 if(length<.0001f){x=0;y=1;z=0;length=1;}
                 ns[j]=x/length;ns[j+1]=y/length;ns[j+2]=z/length;
@@ -232,45 +243,42 @@ public final class Luna3DView extends GLSurfaceView {
             }
             return new Mesh(v,ix);
         }
-        static Mesh profile(float[] radii,int sides){int rings=radii.length;float[]v=new float[rings*(sides+1)*3];int k=0;for(int r=0;r<rings;r++){float y=1f-2f*r/(rings-1f);for(int s=0;s<=sides;s++){double a=2*Math.PI*s/sides;v[k++]=(float)Math.cos(a)*radii[r];v[k++]=y;v[k++]=(float)Math.sin(a)*radii[r];}}short[]ix=new short[(rings-1)*sides*6];k=0;for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;}return new Mesh(v,ix,1);}
+        static float smooth(float[] p,float at){
+            int i=Math.min(p.length-2,(int)at);float t=at-i;
+            float before=p[Math.max(0,i-1)],a=p[i],b=p[i+1],after=p[Math.min(p.length-1,i+2)];
+            return a+.5f*t*(b-before+t*(2*before-5*a+4*b-after+t*(3*(a-b)+after-before)));
+        }
+        static Mesh loft(float[] widths,float[] depths,float[] heights,int sides){
+            int subdivisions=4,rings=(widths.length-1)*subdivisions+1,k=0;
+            float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++){
+                float at=r/(float)subdivisions,w=smooth(widths,at),d=smooth(depths,at);
+                float y=heights==null?1f-2f*r/(rings-1f):smooth(heights,at);
+                for(int s=0;s<=sides;s++){double angle=2*Math.PI*s/sides;
+                    v[k++]=(float)Math.cos(angle)*w;v[k++]=y;v[k++]=(float)Math.sin(angle)*d;
+                }
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){
+                short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);
+                ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;
+                ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;
+            }
+            return new Mesh(v,ix,1,sides);
+        }
+        static Mesh profile(float[] radii,int sides){return loft(radii,radii,null,sides);}
         static Mesh faceProfile(int sides){
             // Rounded forehead and cheeks narrow gradually into a jaw and chin.
             float[] ys={1f,.82f,.43f,.05f,-.43f,-.78f,-1f};
             float[] widths={.38f,.78f,.98f,1f,.88f,.62f,.27f};
             float[] depths={.48f,.8f,.96f,1f,.9f,.7f,.42f};
-            int rings=ys.length,k=0;float[] verts=new float[rings*(sides+1)*3];
-            for(int ring=0;ring<rings;ring++)for(int side=0;side<=sides;side++){
-                double angle=2*Math.PI*side/sides;
-                verts[k++]=(float)Math.cos(angle)*widths[ring];
-                verts[k++]=ys[ring];
-                verts[k++]=(float)Math.sin(angle)*depths[ring];
-            }
-            short[] indices=new short[(rings-1)*sides*6];k=0;
-            for(int ring=0;ring<rings-1;ring++)for(int side=0;side<sides;side++){
-                short a=(short)(ring*(sides+1)+side),b=(short)(a+sides+1);
-                indices[k++]=a;indices[k++]=(short)(a+1);indices[k++]=b;
-                indices[k++]=(short)(a+1);indices[k++]=(short)(b+1);indices[k++]=b;
-            }
-            return new Mesh(verts,indices,1);
+            return loft(widths,depths,ys,sides);
         }
         static Mesh bodyProfile(int sides){
             // Shoulder, waist and hip contours; depth differs from width at each ring.
             float[]width={.24f,.65f,.92f,1f,.94f,.82f,.72f,.78f,.86f};
             float[]depth={.45f,.65f,.80f,.87f,.88f,.78f,.70f,.78f,.90f};
-            int rings=width.length,k=0;float[]v=new float[rings*(sides+1)*3];
-            for(int r=0;r<rings;r++)for(int a=0;a<=sides;a++){
-                double angle=2*Math.PI*a/sides;
-                v[k++]=(float)Math.cos(angle)*width[r];
-                v[k++]=1f-2f*r/(rings-1f);
-                v[k++]=(float)Math.sin(angle)*depth[r];
-            }
-            short[]ix=new short[(rings-1)*sides*6];k=0;
-            for(int r=0;r<rings-1;r++)for(int a=0;a<sides;a++){
-                short top=(short)(r*(sides+1)+a),bottom=(short)(top+sides+1);
-                ix[k++]=top;ix[k++]=(short)(top+1);ix[k++]=bottom;
-                ix[k++]=(short)(top+1);ix[k++]=(short)(bottom+1);ix[k++]=bottom;
-            }
-            return new Mesh(v,ix,1);
+            return loft(width,depth,null,sides);
         }
         static Mesh frill(){
             int sides=64,rings=3,k=0;float[]v=new float[rings*(sides+1)*3];
