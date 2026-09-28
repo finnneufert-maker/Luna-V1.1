@@ -96,6 +96,26 @@ def tube(obj,name,mat,points,radii,sides=10):
             faces.extend(((a,c,b),(b,c,d)))
     obj.mesh(name,mat,vertices,faces)
 
+def hair_ribbon(obj,name,mat,x,tip,lean=0):
+    # A layered, tapered lock follows the scalp and falls across the forehead.
+    # A thin ribbon keeps the fringe smooth instead of looking like linked beads.
+    path=[(x*.72,1.18,-.02,.070),(x*.82,1.16,.17,.086),
+          (x*.94,1.10,.33,.091),(x+lean*.4,1.04,.44,.082),
+          (x+lean*.8,.98,.505,.067),(x+lean,tip,.524,.003)]
+    vertices=[]
+    for px,py,pz,width in path:
+        for front in (False,True):
+            for u in (-1,0,1):
+                vertices.append((px+u*width,py-.012*(1-u*u),pz+(.014 if front else -.014)))
+    faces=[]
+    stride=6
+    for row in range(len(path)-1):
+        for layer in (0,3):
+            for col in range(2):
+                a=row*stride+layer+col;b=a+1;c=a+stride;d=c+1
+                faces.extend(((a,b,c),(b,d,c)) if layer else ((a,c,b),(b,c,d)))
+    obj.mesh(name,mat,vertices,faces)
+
 def cat_ear(obj,side,scale,chibi=False):
     x=side*(.38 if chibi else .29)*scale;base=1.08*scale;z=-.025*scale
     def shape(t,a):
@@ -129,25 +149,13 @@ def build(chibi=False):
         tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX-.03),1.00,.14),(side*(hairX+.005),.82,.20),(side*(hairX+.015),.61,.19),(side*(hairX+.01),.39,.15)],
              [.055,.085,.08,.008],12)
         tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
-    # Broad overlapping locks grow from the crown, then taper into curved bangs.
-    # Their staggered tips keep the forehead readable without a row of spikes.
+    # Broad sculpted locks grow from the crown and overlap into a soft fringe.
     for i in range(-4,5):
         x=i*.078
         sweep=.018*sin(i*1.4)
         tip=.91+.035*(abs(i)%3)
-        tube(o,'hair_crown_'+str(i),'hairlight' if i in (-3,2) else 'hair',
-             [(x*.73,1.16,-.07),(x*.9,1.17,.15),(x+sweep,1.10,.34),
-              (x+sweep*.6,1.01,.45)],
-             [.078,.092,.096,.078],12)
-        tube(o,'hair_bang_'+str(i),'hairlight' if i in (-3,2) else 'hair',
-             [(x+sweep*.6,1.04,.43),(x+sweep,.98,.49),
-              (x+sweep+.018*sin(i),tip,.515)],
-             [.072,.078,.004],12)
-    for i in range(-2,3):
-        x=i*.115
-        tube(o,'hair_fine_bang_'+str(i),'hairlight',
-             [(x,1.05,.46),(x+.008*sin(i),.99,.518),(x+.012*sin(i),.925+(abs(i)%2)*.025,.527)],
-             [.005,.006,.001],6)
+        hair_ribbon(o,'hair_bang_'+str(i),'hairlight' if i in (-3,2) else 'hair',
+                    x,tip,sweep+.013*sin(i))
     # Layered long hair remains visible from behind, down to the waist.
     for i in range(-3,4):
         x=i*(.11 if chibi else .09)
