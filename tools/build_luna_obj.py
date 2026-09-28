@@ -63,7 +63,20 @@ def loft(obj,name,mat,rings,steps=28):
             pleat=1+.025*cos(10*a)*min(1,(-y-.65)*2)
             w*=pleat;d*=pleat
         return (w*cos(a),y,z+d*sin(a))
-    surface(obj,name,mat,(len(rings)-1)*5+1,steps,fn,True)
+    if name == 'face':
+        # Skin is the front of the head, not a second closed head around the hair.
+        # A closed loft exposed broad flesh-colored side patches in profile.
+        rows=(len(rings)-1)*5+1
+        vertices=[fn(i/(rows-1),.30+(pi-.60)*j/steps)
+                  for i in range(rows) for j in range(steps+1)]
+        faces=[]
+        for i in range(rows-1):
+            for j in range(steps):
+                a=i*(steps+1)+j;b=a+1;c=a+steps+1;d=c+1
+                faces.extend(((a,b,c),(b,d,c)))
+        obj.mesh(name,mat,vertices,faces)
+    else:
+        surface(obj,name,mat,(len(rings)-1)*5+1,steps,fn,True)
 
 def tube(obj,name,mat,points,radii,sides=10):
     # Curved strands, limbs, and tail are continuous tapered tubes.
@@ -113,8 +126,8 @@ def build(chibi=False):
         hairX=.47 if chibi else .34
         tube(o,'hair_front_'+str(side),'hair',[(side*hairX,1.05,.12),(side*(hairX+.025),.82,.13),(side*(hairX+.025),.55,.12),(side*hairX,.30,.04)],[.085,.09,.065,.008])
         # Cover the exposed side of the face; Luna only has the cat ears above her head.
-        tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX+.035),1.00,.19),(side*(hairX+.08),.82,.29),(side*(hairX+.09),.61,.27),(side*(hairX+.055),.38,.20)],
-             [.075,.105,.105,.008],12)
+        tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX-.03),1.00,.14),(side*(hairX+.005),.82,.20),(side*(hairX+.015),.61,.19),(side*(hairX+.01),.39,.15)],
+             [.055,.085,.08,.008],12)
         tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
     # Broad overlapping locks grow from the crown, then taper into curved bangs.
     # Their staggered tips keep the forehead readable without a row of spikes.
