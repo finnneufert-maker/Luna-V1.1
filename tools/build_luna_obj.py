@@ -99,7 +99,7 @@ def build(chibi=False):
     o=Obj(chibi);s=1 if not chibi else .94
     # A narrowed jaw and continuous back of head, with silver hair behind it.
     ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.53 if chibi else .39*s,.49*s,.31*s)
-    loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.29*s,.20*s,.17*s),(.85*s,.36*s,.27*s,.20*s),(.65*s,.37*s,.29*s,.20*s),(.46*s,.31*s,.24*s,.18*s),(.32*s,.21*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.38,.23,.18),(.82,.49,.31,.20),(.63,.52,.33,.20),(.45,.45,.27,.18),(.33,.29,.18,.16),(.29,.10,.09,.14)])
+    loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.28*s,.20*s,.17*s),(.85*s,.32*s,.27*s,.20*s),(.65*s,.33*s,.29*s,.20*s),(.46*s,.29*s,.24*s,.18*s),(.32*s,.20*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.36,.23,.18),(.82,.44,.31,.20),(.63,.46,.33,.20),(.45,.42,.27,.18),(.33,.28,.18,.16),(.29,.10,.09,.14)])
     for side in (-1,1):
         cat_ear(o,side,1,chibi)
         eyeX=.19 if not chibi else .27;eyeY=.75 if not chibi else .73
@@ -113,8 +113,8 @@ def build(chibi=False):
         hairX=.47 if chibi else .34
         tube(o,'hair_front_'+str(side),'hair',[(side*hairX,1.05,.12),(side*(hairX+.025),.82,.13),(side*(hairX+.025),.55,.12),(side*hairX,.30,.04)],[.085,.09,.065,.008])
         # Cover the exposed side of the face; Luna only has the cat ears above her head.
-        tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX-.03),1.00,.14),(side*(hairX+.005),.82,.20),(side*(hairX+.015),.61,.19),(side*(hairX+.01),.39,.15)],
-             [.055,.095,.095,.008],12)
+        tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX+.035),1.00,.19),(side*(hairX+.08),.82,.29),(side*(hairX+.09),.61,.27),(side*(hairX+.055),.38,.20)],
+             [.075,.105,.105,.008],12)
         tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
     # Broad overlapping locks grow from the crown, then taper into curved bangs.
     # Their staggered tips keep the forehead readable without a row of spikes.
