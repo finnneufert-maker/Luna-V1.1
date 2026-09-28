@@ -42,9 +42,9 @@ def surface(obj,name,mat,rows,sides,fn,closed=False):
     obj.mesh(name,mat,verts,faces)
 
 def ellipsoid(obj,name,mat,x,y,z,rx,ry,rz):
-    surface(obj,name,mat,24,32,lambda t,a:(x+rx*sin(pi*t)*cos(a),y+ry*cos(pi*t),z+rz*sin(pi*t)*sin(a)))
+    surface(obj,name,mat,14,20,lambda t,a:(x+rx*sin(pi*t)*cos(a),y+ry*cos(pi*t),z+rz*sin(pi*t)*sin(a)))
 
-def loft(obj,name,mat,rings,steps=36):
+def loft(obj,name,mat,rings,steps=28):
     # Hand-defined radial cross sections: (Y, width, depth, Z center).
     def fn(t,a):
         at=t*(len(rings)-1);i=min(len(rings)-2,int(at));u=at-i
@@ -52,9 +52,9 @@ def loft(obj,name,mat,rings,steps=36):
         values=[rings[i][k]*(1-smooth)+rings[i+1][k]*smooth for k in range(4)]
         y,w,d,z=values
         return (w*cos(a),y,z+d*sin(a))
-    surface(obj,name,mat,(len(rings)-1)*5+1,steps,fn,True)
+    surface(obj,name,mat,(len(rings)-1)*3+1,steps,fn,True)
 
-def tube(obj,name,mat,points,radii,sides=16):
+def tube(obj,name,mat,points,radii,sides=10):
     # Curved strands, limbs, and tail are continuous tapered tubes.
     vertices=[];faces=[]
     for i,(x,y,z) in enumerate(points):
@@ -77,12 +77,12 @@ def cat_ear(obj,side,scale):
     def shape(t,a):
         width=(.20*(1-t)**.72+.012)*scale;depth=(.115*(1-t)+.015)*scale
         return (x+side*.12*t*scale+width*cos(a),base+.42*t*scale,z+.05*t*scale+depth*sin(a))
-    surface(obj,'ear_'+str(side),'hair',12,32,shape)
+    surface(obj,'ear_'+str(side),'hair',9,20,shape)
     # Pink inner ear follows the forward face, with a rounded top.
     def inner(t,a):
         width=(.13*(1-t)**.7+.005)*scale
         return (x+side*.12*t*scale+width*cos(a),base+(.035+.31*t)*scale,(.13+.03*t)*scale+.006*scale*sin(a))
-    surface(obj,'ear_inner_'+str(side),'pink',10,20,inner)
+    surface(obj,'ear_inner_'+str(side),'pink',8,16,inner)
 
 def build(chibi=False):
     o=Obj();s=1 if not chibi else .94
@@ -106,9 +106,9 @@ def build(chibi=False):
     ellipsoid(o,'nose','skin',0,.62,.495,.023,.025,.019)
     ellipsoid(o,'mouth','pink',0,.51,.481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
-    loft(o,'dress','dress',[(.28,.17,.16,0),(.10,.34,.22,0),(-.20,.38,.25,0),(-.48,.29,.22,0),(-.62,.31,.24,0),(-.78,.42,.32,0),(-.96,.56,.40,0),(-1.10,.61,.43,0),(-1.15,.60,.42,0)],48)
+    loft(o,'dress','dress',[(.28,.17,.16,0),(.10,.34,.22,0),(-.20,.38,.25,0),(-.48,.29,.22,0),(-.62,.31,.24,0),(-.78,.42,.32,0),(-.96,.56,.40,0),(-1.10,.61,.43,0),(-1.15,.60,.42,0)],32)
     # Curved apron panel lies on the dress and follows its flare.
-    verts=[];faces=[];rows=16;cols=24
+    verts=[];faces=[];rows=12;cols=16
     for i in range(rows+1):
         t=i/rows;y=.06-1.20*t;w=.22+.30*t;depth=.23+.27*t
         for j in range(cols+1):
@@ -118,7 +118,7 @@ def build(chibi=False):
         for j in range(cols):
             a=i*(cols+1)+j;b=a+1;c=a+cols+1;d=c+1;faces.extend(((a,c,b),(b,c,d)))
     o.mesh('apron','apron',verts,faces)
-    tube(o,'hem','apron',[(.60*cos(2*pi*i/64),-1.15+.018*cos(i*pi/4),.42*sin(2*pi*i/64)) for i in range(65)],[.035]*65,8)
+    tube(o,'hem','apron',[(.60*cos(2*pi*i/32),-1.15+.018*cos(i*pi/4),.42*sin(2*pi*i/32)) for i in range(33)],[.035]*33,8)
     for side in (-1,1):
         # Natural sleeve, wrist, palm, and five distinct fingers.
         tube(o,'sleeve_'+str(side),'dress',[(side*.34,.09,0),(side*.48,-.17,.01),(side*.51,-.40,.035),(side*.57,-.62,.09)],[.16,.16,.11,.075])
