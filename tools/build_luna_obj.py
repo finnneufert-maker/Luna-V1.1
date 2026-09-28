@@ -59,6 +59,9 @@ def loft(obj,name,mat,rings,steps=28):
             p2=rings[i+1][k];p3=rings[min(len(rings)-1,i+2)][k]
             values.append(.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u*u*u))
         y,w,d,z=values
+        if name=='dress' and y<-.65:
+            pleat=1+.025*cos(10*a)*min(1,(-y-.65)*2)
+            w*=pleat;d*=pleat
         return (w*cos(a),y,z+d*sin(a))
     surface(obj,name,mat,(len(rings)-1)*5+1,steps,fn,True)
 
@@ -113,6 +116,12 @@ def build(chibi=False):
     for i in range(-3,4):
         x=i*.085
         tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.32),(x*.98,1.00,.47),(x*.95,.88+(abs(i)%2)*.055,.53)],[.068,.076,.005],10)
+    # Layered long hair remains visible from behind, down to the waist.
+    for i in range(-3,4):
+        x=i*(.11 if chibi else .09)
+        tube(o,'hair_rear_'+str(i),'hairlight' if i in (-2,1) else 'hair',
+             [(x*.75,1.01,-.29),(x,.63,-.37),(x*1.08,.20,-.39),(x*1.10,-.20,-.38),(x*1.04,-.58,-.34)],
+             [.055,.087,.095,.07,.004],10)
     ellipsoid(o,'nose','skin',0,.62,.55 if chibi else .495,.023,.025,.019)
     ellipsoid(o,'mouth','pink',0,.51,.54 if chibi else .481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
@@ -128,6 +137,15 @@ def build(chibi=False):
         for j in range(cols):
             a=i*(cols+1)+j;b=a+1;c=a+cols+1;d=c+1;faces.extend(((a,c,b),(b,c,d)))
     o.mesh('apron','apron',verts,faces)
+    for side in (-1,1):
+        tube(o,'apron_strap_'+str(side),'apron',
+             [(side*.21,.18,.17),(side*.24,.04,.235),(side*.25,-.18,.29),(side*.23,-.37,.315)],
+             [.033,.039,.035,.025],10)
+    # A small waist bow gives the back of the dress a separate silhouette.
+    for side in (-1,1):
+        o.mesh('back_bow_'+str(side),'apron',
+               [(0,-.48,-.265),(side*.24,-.38,-.32),(side*.20,-.62,-.33)],[(0,1,2)])
+    ellipsoid(o,'back_bow_knot','purple',0,-.49,-.34,.045,.055,.027)
     tube(o,'hem','apron',[(.60*cos(2*pi*i/32),-1.15+.018*cos(i*pi/4),.42*sin(2*pi*i/32)) for i in range(33)],[.035]*33,8)
     for side in (-1,1):
         # Natural sleeve, wrist, palm, and five distinct fingers.
