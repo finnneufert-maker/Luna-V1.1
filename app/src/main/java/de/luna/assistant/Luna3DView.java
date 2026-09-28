@@ -23,12 +23,12 @@ public final class Luna3DView extends GLSurfaceView {
     private static final class LunaRenderer implements Renderer {
         private static final String VS="uniform mat4 m;attribute vec3 p;varying float l;void main(){vec3 n=normalize(p);l=.58+.42*max(dot(n,normalize(vec3(-.4,.8,1.))),0.);gl_Position=m*vec4(p,1.);}";
         private static final String FS="precision mediump float;uniform vec4 c;varying float l;void main(){gl_FragColor=vec4(c.rgb*l,c.a);}";
-        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,leg,panel,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
+        private int program,pos,mvp,color; private Mesh ball,face,cone,torso,skirt,limb,leg,panel,apronSkirt,hairLock; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
         private final float[] proj=new float[16],view=new float[16],model=new float[16],tmp=new float[16],out=new float[16];
         private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
         private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, HIGHLIGHT={.96f,.94f,1,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(32);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},32);limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},16);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},16);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();start=System.currentTimeMillis();}
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");mvp=GLES20.glGetUniformLocation(program,"m");color=GLES20.glGetUniformLocation(program,"c");ball=Mesh.sphere(16,20);face=Mesh.faceProfile(32);cone=Mesh.cone();torso=Mesh.bodyProfile(32);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},32);limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},16);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},16);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},10);panel=Mesh.panel();apronSkirt=Mesh.apronSkirt();start=System.currentTimeMillis();}
         @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
         @Override public void onDrawFrame(GL10 g){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
@@ -75,16 +75,9 @@ public final class Luna3DView extends GLSurfaceView {
             draw(skirt,0,-1.04f,0,skirtWidth*.98f,.11f,.49f,clothMotion*.35f,0,clothMotion*.75f,DARK);
             oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
             draw(panel,0,-.34f,.48f,apron,.29f,.065f,0,0,0,APRON);
-            draw(panel,0,-.78f,.65f,skirtWidth*.69f,.29f,.10f,clothMotion*.35f,0,clothMotion,APRON);
-            // Fabric folds and a small apron border break up the flat white panel.
-            for(int side=-1;side<=1;side+=2){
-                oval(side*skirtWidth*.47f,-.81f,.67f,.018f,.27f,.025f,0,0,side*8,WHITE);
-                oval(side*skirtWidth*.61f,-.96f,.49f,.022f,.10f,.024f,0,0,side*19,DARK);
-            }
+            draw(apronSkirt,0,-.82f,.01f,skirtWidth,.30f,.51f,clothMotion*.35f,0,clothMotion,APRON);
             oval(0,-1.12f,0,skirtWidth*1.12f,.018f,.48f,0,0,clothMotion,WHITE);
             oval(0,-1.14f,0,skirtWidth*1.06f,.014f,.46f,0,0,clothMotion*.8f,APRON);
-            for(int j=-2;j<=2;j++){float px=j*skirtWidth*.31f;
-                draw(panel,px,-.91f,.68f,skirtWidth*.055f,.17f,.05f,clothMotion*.35f,0,clothMotion,j==0?PURPLE:DARK);}
             oval(-w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,-24,WHITE);
             oval(w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,24,WHITE);
             oval(-w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,-18,-16,PURPLE);
@@ -226,6 +219,29 @@ public final class Luna3DView extends GLSurfaceView {
                 short top=(short)(r*(sides+1)+a),bottom=(short)(top+sides+1);
                 ix[k++]=top;ix[k++]=(short)(top+1);ix[k++]=bottom;
                 ix[k++]=(short)(top+1);ix[k++]=(short)(bottom+1);ix[k++]=bottom;
+            }
+            return new Mesh(v,ix);
+        }
+        static Mesh apronSkirt(){
+            // The apron follows the skirt's curved front instead of floating as a flat rectangle.
+            int rows=12,cols=24,k=0;
+            float[]v=new float[(rows+1)*(cols+1)*3];
+            for(int y=0;y<=rows;y++)for(int x=0;x<=cols;x++){
+                float down=y/(float)rows;
+                double angle=(x/(double)cols-.5)*1.43;
+                float radius=.82f+.46f*down;
+                float fold=(float)Math.sin(angle*13)*.012f*down;
+                v[k++]=(float)Math.sin(angle)*radius;
+                v[k++]=1f-2f*down;
+                v[k++]=(float)Math.cos(angle)*(radius*.99f+fold)+.09f;
+            }
+            short[]ix=new short[rows*cols*12];k=0;
+            for(int y=0;y<rows;y++)for(int x=0;x<cols;x++){
+                short a=(short)(y*(cols+1)+x),b=(short)(a+cols+1);
+                ix[k++]=a;ix[k++]=b;ix[k++]=(short)(a+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(b+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=a;
+                ix[k++]=(short)(b+1);ix[k++]=b;ix[k++]=(short)(a+1);
             }
             return new Mesh(v,ix);
         }
