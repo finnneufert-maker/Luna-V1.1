@@ -124,24 +124,26 @@ def build(chibi=False):
     # Layered long hair remains visible from behind, down to the waist.
     for i in range(-3,4):
         x=i*(.11 if chibi else .09)
+        tip_y=-.56-.035*(abs(i)%3)
         tube(o,'hair_rear_'+str(i),'hairlight' if i in (-2,1) else 'hair',
-             [(x*.75,1.01,-.29),(x,.63,-.37),(x*1.08,.20,-.39),(x*1.10,-.20,-.38),(x*1.04,-.58,-.34)],
+             [(x*.75,1.01,-.29),(x,.63,-.37),(x*1.08,.20,-.39),
+              (x*1.10+.018*sin(i),-.20,-.38),(x*1.04+.028*sin(i),tip_y,-.34)],
              [.055,.087,.095,.07,.004],10)
     for i in range(-3,4):
         x=i*(.09 if chibi else .077)
-        tube(o,'hair_fine_rear_'+str(i),'hairlight',
-             [(x,.83,-.395),(x+.01*sin(i),.43,-.468),(x+.016*sin(i),.02,-.49),
-              (x+.025*sin(i),-.37,-.445)],
+        tube(o,'hair_fine_rear_'+str(i),'hairlight' if i in (-2,1,3) else 'hair',
+             [(x,.83,-.395),(x+.01*sin(i),.43,-.468),(x+.02*sin(i),.02,-.49),
+              (x+.033*sin(i),-.30-.045*(abs(i)%3),-.445)],
              [.004,.007,.008,.002],6)
     # The bridge and shallow triangular cat nose read as a nose in profile.
-    nose_z=.055 if chibi else 0
-    tube(o,'nose_bridge','skin',[(0,.70,.485+nose_z),(0,.65,.515+nose_z),(0,.60,.535+nose_z)],
-         [.014,.021,.027],10)
-    o.mesh('nose_tip','skin',[(0,.604,.541+nose_z),(-.025,.585,.548+nose_z),
-                              (.025,.585,.548+nose_z),(0,.581,.558+nose_z)],
+    nose_z=.030 if chibi else 0
+    tube(o,'nose_bridge','skin',[(0,.70,.475+nose_z),(0,.65,.493+nose_z),(0,.60,.512+nose_z)],
+         [.013,.018,.021],10)
+    o.mesh('nose_tip','skin',[(0,.604,.517+nose_z),(-.022,.585,.522+nose_z),
+                              (.022,.585,.522+nose_z),(0,.581,.535+nose_z)],
            [(0,1,3),(0,3,2),(1,2,3)])
     for side in (-1,1):
-        ellipsoid(o,'nose_nostril_'+str(side),'pink',side*.019,.583,.557+nose_z,.006,.003,.002,7,10)
+        ellipsoid(o,'nose_nostril_'+str(side),'pink',side*.016,.583,.534+nose_z,.005,.003,.002,7,10)
     ellipsoid(o,'mouth','pink',0,.51,.54 if chibi else .481,.051,.012,.008)
     # Slim shoulder-to-waist silhouette and an uninterrupted dress/skirt surface.
     loft(o,'dress','dress',[(.28,.17,.16,0),(.10,.34,.22,0),(-.20,.38,.25,0),(-.48,.29,.22,0),(-.62,.31,.24,0),(-.78,.42,.32,0),(-.96,.56,.40,0),(-1.10,.61,.43,0),(-1.15,.60,.42,0)],32)
