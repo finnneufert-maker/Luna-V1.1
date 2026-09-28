@@ -111,7 +111,7 @@ def cat_ear(obj,side,scale,chibi=False):
 def build(chibi=False):
     o=Obj(chibi);s=1 if not chibi else .94
     # A narrowed jaw and continuous back of head, with silver hair behind it.
-    ellipsoid(o,'hair_shell','hair',0,.69*s,-.075*s,.53 if chibi else .39*s,.49*s,.31*s)
+    ellipsoid(o,'hair_shell','hair',0,.69*s,-.055*s,.53 if chibi else .39*s,.49*s,.37*s)
     loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.28*s,.20*s,.17*s),(.85*s,.32*s,.27*s,.20*s),(.65*s,.33*s,.29*s,.20*s),(.46*s,.29*s,.24*s,.18*s),(.32*s,.20*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.36,.23,.18),(.82,.44,.31,.20),(.63,.46,.33,.20),(.45,.42,.27,.18),(.33,.28,.18,.16),(.29,.10,.09,.14)])
     for side in (-1,1):
         cat_ear(o,side,1,chibi)
