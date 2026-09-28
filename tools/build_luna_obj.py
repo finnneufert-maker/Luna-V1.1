@@ -116,14 +116,25 @@ def build(chibi=False):
         tube(o,'hair_temple_'+str(side),'hair',[(side*(hairX-.03),1.00,.14),(side*(hairX+.005),.82,.20),(side*(hairX+.015),.61,.19),(side*(hairX+.01),.39,.15)],
              [.055,.095,.095,.008],12)
         tube(o,'hair_back_'+str(side),'hair',[(side*(hairX-.07),.97,-.25),(side*(hairX+.02),.60,-.25),(side*(hairX+.03),.14,-.25),(side*hairX,-.13,-.19)],[.12,.13,.10,.008])
-    for i in range(-3,4):
-        x=i*.085
-        tube(o,'hair_bang_'+str(i),'hairlight' if i%3==0 else 'hair',[(x,1.11,.32),(x*.98,1.00,.47),(x*.95,.88+(abs(i)%2)*.055,.53)],[.068,.076,.005],10)
+    # Broad overlapping locks grow from the crown, then taper into curved bangs.
+    # Their staggered tips keep the forehead readable without a row of spikes.
+    for i in range(-4,5):
+        x=i*.078
+        sweep=.018*sin(i*1.4)
+        tip=.91+.035*(abs(i)%3)
+        tube(o,'hair_crown_'+str(i),'hairlight' if i in (-3,2) else 'hair',
+             [(x*.73,1.16,-.07),(x*.9,1.17,.15),(x+sweep,1.10,.34),
+              (x+sweep*.6,1.01,.45)],
+             [.078,.092,.096,.078],12)
+        tube(o,'hair_bang_'+str(i),'hairlight' if i in (-3,2) else 'hair',
+             [(x+sweep*.6,1.04,.43),(x+sweep,.98,.49),
+              (x+sweep+.018*sin(i),tip,.515)],
+             [.072,.078,.004],12)
     for i in range(-2,3):
-        x=i*.11
+        x=i*.115
         tube(o,'hair_fine_bang_'+str(i),'hairlight',
-             [(x,1.08,.43),(x+.008*sin(i),.98,.515),(x+.012*sin(i),.89+(abs(i)%2)*.025,.54)],
-             [.007,.008,.002],6)
+             [(x,1.05,.46),(x+.008*sin(i),.99,.518),(x+.012*sin(i),.925+(abs(i)%2)*.025,.527)],
+             [.005,.006,.001],6)
     # Layered long hair remains visible from behind, down to the waist.
     for i in range(-3,4):
         x=i*(.11 if chibi else .09)
