@@ -288,6 +288,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private TextView text(String s,int size) { TextView v=new TextView(this); v.setText(s); v.setTextSize(size); v.setTextColor(Color.WHITE); v.setPadding(0,dp(8),0,dp(8)); return v; }
     private void speak(String s) { if(tts!=null) tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"luna"); }
     private void setLunaState(String state) {
+        if (luna3d != null) luna3d.setExpression(state);
         if (!Settings.canDrawOverlays(this)) return;
         Intent i=new Intent(this,OverlayService.class).setAction(OverlayService.ACTION_STATE).putExtra(OverlayService.EXTRA_STATE,state);
         if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);

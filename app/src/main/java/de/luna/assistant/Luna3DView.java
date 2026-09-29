@@ -6,182 +6,342 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.ShortBuffer;
+import java.nio.*;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-/** Lightweight code-built 3D Luna: no external model file or heavy engine required. */
+/** Authored OBJ assets with a procedural fallback. */
 public final class Luna3DView extends GLSurfaceView {
-    private final LunaRenderer renderer;
-    private float lastTouchX;
-
-    public Luna3DView(Context context) { this(context, null); }
-    public Luna3DView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        setEGLContextClientVersion(2);
-        renderer = new LunaRenderer();
-        setRenderer(renderer);
-        setRenderMode(RENDERMODE_CONTINUOUSLY);
-        setPreserveEGLContextOnPause(true);
-    }
-
-    public void setExpression(String state) { queueEvent(() -> renderer.expression = state == null ? "idle" : state); }
-    public boolean toggleChibi() { renderer.chibi=!renderer.chibi; return renderer.chibi; }
-
-    @Override public boolean onTouchEvent(MotionEvent event) {
-        if(event.getAction()==MotionEvent.ACTION_DOWN){lastTouchX=event.getX();return true;}
-        if(event.getAction()==MotionEvent.ACTION_MOVE){
-            float dx=event.getX()-lastTouchX; lastTouchX=event.getX();
-            renderer.userYaw=(renderer.userYaw+dx*.45f)%360f; return true;
-        }
-        if(event.getAction()==MotionEvent.ACTION_UP){performClick();return true;}
-        return true;
-    }
+    private final LunaRenderer renderer; private float lastX,lastY;
+    public Luna3DView(Context c){this(c,null);}
+    public Luna3DView(Context c,AttributeSet a){super(c,a);setEGLContextClientVersion(2);renderer=new LunaRenderer(c.getApplicationContext());setRenderer(renderer);setRenderMode(RENDERMODE_CONTINUOUSLY);setPreserveEGLContextOnPause(true);}
+    public void setExpression(String s){queueEvent(()->renderer.expression=s==null?"idle":s);}
+    public boolean toggleChibi(){renderer.chibi=!renderer.chibi;return renderer.chibi;}
+    @Override public boolean onTouchEvent(MotionEvent e){if(e.getAction()==MotionEvent.ACTION_DOWN){if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);lastX=e.getX();lastY=e.getY();return true;}if(e.getAction()==MotionEvent.ACTION_MOVE){renderer.yaw=(renderer.yaw+(.48f*(e.getX()-lastX)))%360f;renderer.pitch=Math.max(-78f,Math.min(78f,renderer.pitch+.32f*(e.getY()-lastY)));lastX=e.getX();lastY=e.getY();return true;}if(e.getAction()==MotionEvent.ACTION_UP){if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);performClick();return true;}if(e.getAction()==MotionEvent.ACTION_CANCEL){if(getParent()!=null)getParent().requestDisallowInterceptTouchEvent(false);return true;}return true;}
     @Override public boolean performClick(){super.performClick();return true;}
 
     private static final class LunaRenderer implements Renderer {
-        private static final String VS = "uniform mat4 uMvp;attribute vec3 aPos;varying float vLight;void main(){vec3 n=normalize(aPos);vLight=.62+.38*max(dot(n,normalize(vec3(-.4,.7,1.0))),0.0);gl_Position=uMvp*vec4(aPos,1.0);}";
-        private static final String FS = "precision mediump float;uniform vec4 uColor;varying float vLight;void main(){gl_FragColor=vec4(uColor.rgb*vLight,uColor.a);}";
-        private int program, position, mvpHandle, colorHandle;
-        private Mesh sphere, ear;
-        private final float[] projection=new float[16], view=new float[16], model=new float[16], temp=new float[16], mvp=new float[16];
-        private long started;
-        volatile String expression="idle";
-        volatile float userYaw=0f;
-        volatile boolean chibi=false;
+        private static final String VS="uniform mat4 m;uniform mat4 nm;attribute vec3 p;attribute vec3 normal;varying float l;varying float rim;void main(){vec3 n=normalize((nm*vec4(normal,0.)).xyz);l=.57+.43*max(dot(n,normalize(vec3(-.45,.78,1.))),0.);rim=pow(1.-max(dot(n,vec3(0.,0.,1.)),0.),2.);gl_Position=m*vec4(p,1.);}";
+        private static final String FS="precision mediump float;uniform vec4 c;varying float l;varying float rim;void main(){gl_FragColor=vec4(min(c.rgb*l+vec3(.045*rim),vec3(1.)),c.a);}";
+        private final Context context; private LunaObjModel regularAsset,chibiAsset;
+        LunaRenderer(Context context){this.context=context;}
+        private int program,pos,norm,mvp,normalMatrix,color; private Mesh ball,face,cone,ear,torso,skirt,frill,limb,leg,panel,apronSkirt,hairLock,tailMesh; private long start; volatile String expression="idle"; volatile float yaw,pitch; volatile boolean chibi;
+        private final float[] proj=new float[16],view=new float[16],model=new float[16],tmp=new float[16],out=new float[16];
+        private float poseY,poseX,poseZ,hairMotion,clothMotion,fall;
+        private static final float[] SKIN={.98f,.82f,.79f,1}, SILVER={.84f,.84f,.94f,1}, HIGHLIGHT={.96f,.94f,1,1}, DARK={.60f,.59f,.74f,1}, DRESS={.075f,.05f,.12f,1}, APRON={.93f,.94f,1,1}, WHITE={1,1,1,1}, PURPLE={.46f,.18f,.64f,1}, EYE={.48f,.18f,.88f,1}, PINK={.9f,.5f,.68f,1}, MOUTH={.48f,.1f,.2f,1}, STOCK={.88f,.9f,.98f,1}, SHOE={.04f,.03f,.07f,1};
 
-        @Override public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            GLES20.glClearColor(0.09f,0.075f,0.15f,1f);
-            GLES20.glEnable(GLES20.GL_DEPTH_TEST);
-            GLES20.glEnable(GLES20.GL_CULL_FACE);
-            program=link(VS,FS);
-            position=GLES20.glGetAttribLocation(program,"aPos");
-            mvpHandle=GLES20.glGetUniformLocation(program,"uMvp");
-            colorHandle=GLES20.glGetUniformLocation(program,"uColor");
-            sphere=Mesh.sphere(14,18);
-            ear=Mesh.pyramid();
-            started=System.currentTimeMillis();
+        @Override public void onSurfaceCreated(GL10 g,EGLConfig c){GLES20.glClearColor(.075f,.06f,.13f,1);GLES20.glEnable(GLES20.GL_DEPTH_TEST);GLES20.glEnable(GLES20.GL_CULL_FACE);program=link(VS,FS);pos=GLES20.glGetAttribLocation(program,"p");norm=GLES20.glGetAttribLocation(program,"normal");mvp=GLES20.glGetUniformLocation(program,"m");normalMatrix=GLES20.glGetUniformLocation(program,"nm");color=GLES20.glGetUniformLocation(program,"c");try{regularAsset=LunaObjModel.load(context,"luna_regular.obj");chibiAsset=LunaObjModel.load(context,"luna_chibi.obj");}catch(Exception e){android.util.Log.e("Luna3D","Could not load OBJ assets; using fallback",e);regularAsset=null;chibiAsset=null;}ball=Mesh.sphere(32,40);face=Mesh.faceProfile(48);cone=Mesh.cone();ear=Mesh.catEar();tailMesh=Mesh.tail();torso=Mesh.bodyProfile(48);skirt=Mesh.profile(new float[]{.65f,.73f,.83f,.94f,1.05f,1.13f,1.18f,1.17f,1.13f},48);frill=Mesh.frill();limb=Mesh.profile(new float[]{.88f,1f,.98f,.89f,.72f},32);leg=Mesh.profile(new float[]{.94f,1f,.98f,.91f,.85f,.82f},32);hairLock=Mesh.profile(new float[]{.28f,.77f,1f,.79f,.36f,.015f},20);panel=Mesh.panel();apronSkirt=Mesh.apronSkirt();start=System.currentTimeMillis();}
+        @Override public void onSurfaceChanged(GL10 g,int w,int h){GLES20.glViewport(0,0,w,h);float r=w/(float)Math.max(1,h);float halfWidth=Math.max(r*1.18f,.82f);Matrix.frustumM(proj,0,-halfWidth,halfWidth,-1.18f,1.18f,2.4f,14);Matrix.setLookAtM(view,0,0,0,5.7f,0,0,0,0,1,0);}
+        @Override public void onDrawFrame(GL10 g){
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);GLES20.glUseProgram(program);
+            float t=(System.currentTimeMillis()-start)/1000f,breath=(float)Math.sin(t*1.7f),sway=(float)Math.sin(t*.7f)*2,phase=t%4.4f;
+            float blink=phase>4.08f?.06f:1;if("sleeping".equals(expression))blink=.06f;
+            float mouth="talking".equals(expression)?.035f+.075f*Math.abs((float)Math.sin(t*10)):.025f;
+            LunaObjModel asset=chibi?chibiAsset:regularAsset;
+            if(asset!=null){asset.draw(pos,norm,mvp,normalMatrix,color,proj,view,yaw,pitch,t,blink,mouth);return;}
+            // Short idle gestures stay out of the way of speech and explicit expressions.
+            boolean idle="idle".equals(expression);
+            float knockPhase=t%23f;
+            float knock=idle&&knockPhase>18f&&knockPhase<19.1f?Math.max(0,(float)Math.sin((knockPhase-18f)*17f)):("knocking".equals(expression)?Math.max(0,(float)Math.sin(t*9)):0);
+            float fallPhase=t%47f;
+            float fallEnvelope=idle&&t>15f&&fallPhase>35f&&fallPhase<37.3f?(float)Math.sin(Math.PI*(fallPhase-35f)/2.3f):0;
+            fall=fallEnvelope*fallEnvelope;
+            float bow="bowing".equals(expression)?28:0,sit="sitting".equals(expression)?-.28f:0;
+            float sneeze="sneezing".equals(expression)?(float)Math.sin((t%1.1f)/1.1f*Math.PI):0;
+            float wave="wave".equals(expression)?(float)Math.sin(t*7)*22:0;
+            float tilt="thinking".equals(expression)?8:sway*.3f,ears="listening".equals(expression)?9:0;
+            hairMotion=(float)Math.sin(t*1.35f)*3f+fall*7f;
+            clothMotion=(float)Math.sin(t*1.75f)*2.4f+fall*11f;
+            poseY=breath*.018f+sit-fall*.57f;
+            poseX=bow+fall*23f;
+            poseZ=fall*24f;
+            if(chibi)chibi(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);else regular(t,blink,mouth,sneeze,knock,wave,tilt,ears,sway);
         }
-
-        @Override public void onSurfaceChanged(GL10 gl,int width,int height) {
-            GLES20.glViewport(0,0,width,height);
-            float ratio=width/(float)Math.max(1,height);
-            Matrix.frustumM(projection,0,-ratio,ratio,-1,1,2.2f,14f);
-            Matrix.setLookAtM(view,0,0,0.15f,5.4f,0,0.1f,0,0,1,0);
+        private void regular(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
+            // Tapered locks form a layered silhouette without solid oval hair tubes.
+            for(int i=-3;i<=3;i++){
+                float x=i*.105f;
+                draw(hairLock,x,.13f,-.20f,.105f,.81f,.11f,0,0,-i*2+hairMotion*.25f,
+                    i%3==0?HIGHLIGHT:(i%2==0?SILVER:DARK));
+            }
+            for(int side=-1;side<=1;side+=2){
+                draw(hairLock,side*.34f,.22f,-.08f,.09f,.68f,.10f,0,0,side*(6+hairMotion*.3f),SILVER);
+            }
+            body(.46f,.69f,.61f,.28f);legs(false,sway);arms(false,sway,knock,wave);
+            head(false,.72f,.38f,.29f,blink,mouth,sneeze,tilt,ears);tail(t,false,sway);}
+        private void chibi(float t,float blink,float mouth,float sneeze,float knock,float wave,float tilt,float ears,float sway){
+            oval(0,.36f,-.2f,.75f,.78f,.43f,0,0,hairMotion*.35f,SILVER);oval(-.48f,.05f,-.17f,.2f,.54f,.19f,0,0,-5+hairMotion,DARK);oval(.48f,.05f,-.17f,.2f,.54f,.19f,0,0,5+hairMotion,DARK);body(.39f,.46f,.62f,.33f);legs(true,sway);arms(true,sway,knock,wave);head(true,.57f,.59f,.36f,blink,mouth,sneeze,tilt,ears);tail(t,true,sway);}
+        private void body(float w,float h,float skirtWidth,float apron){
+            // Tapered shoulders, waist and flared skirt keep a distinct human silhouette at every yaw.
+            draw(torso,0,-.31f,0,w,h,.43f,0,0,0,DRESS);
+            oval(0,-.55f,.01f,w*.77f,.065f,.31f,0,0,0,PURPLE);
+            draw(skirt,0,-.80f,0,skirtWidth,.34f,.51f,clothMotion*.35f,0,clothMotion,DRESS);
+            draw(skirt,0,-1.04f,0,skirtWidth*.98f,.11f,.49f,clothMotion*.35f,0,clothMotion*.75f,DARK);
+            oval(0,-.05f,.27f,w*.75f,.09f,.06f,0,0,0,WHITE);
+            draw(panel,0,-.34f,.48f,apron,.29f,.065f,0,0,0,APRON);
+            draw(apronSkirt,0,-.82f,.01f,skirtWidth,.30f,.51f,clothMotion*.35f,0,clothMotion,APRON);
+            draw(frill,0,-1.12f,0,skirtWidth,.10f,.51f,clothMotion*.35f,0,clothMotion,WHITE);
+            oval(-w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,-24,WHITE);
+            oval(w*.58f,-.07f,.24f,.065f,.12f,.055f,0,0,24,WHITE);
+            oval(-w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,-18,-16,PURPLE);
+            oval(w*.55f,-.38f,-.37f,.23f,.15f,.08f,0,18,16,PURPLE);
+            oval(0,-.38f,-.4f,.1f,.1f,.07f,0,0,0,WHITE);
+            // Bow and collar remain readable during rotation.
+            oval(-.12f,.01f,.35f,.13f,.065f,.045f,0,0,20,PURPLE);
+            oval(.12f,.01f,.35f,.13f,.065f,.045f,0,0,-20,PURPLE);
+            oval(0,.01f,.40f,.045f,.05f,.04f,0,0,0,WHITE);
+            oval(-.07f,-.12f,.39f,.035f,.105f,.025f,0,0,-14,PURPLE);
+            oval(.07f,-.12f,.39f,.035f,.105f,.025f,0,0,14,PURPLE);
+            oval(0,-.17f,.35f,.03f,.03f,.02f,0,0,0,PURPLE);
+            oval(0,-.33f,.35f,.03f,.03f,.02f,0,0,0,PURPLE);
         }
-
-        @Override public void onDrawFrame(GL10 gl) {
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT|GLES20.GL_DEPTH_BUFFER_BIT);
-            GLES20.glUseProgram(program);
-            float t=(System.currentTimeMillis()-started)/1000f;
-            float breathe=(float)Math.sin(t*1.8f)*0.025f;
-            float sway=(float)Math.sin(t*0.7f)*3.2f;
-            float blink=((t%4.2f)>3.95f)?0.08f:1f;
-            if("surprised".equals(expression)) blink=1.35f;
-            if("sleeping".equals(expression)) blink=0.06f;
-            float talk=("talking".equals(expression))?(0.06f+0.08f*Math.abs((float)Math.sin(t*10f))):0.035f;
-            float sneeze="sneezing".equals(expression)?Math.max(0f,(float)Math.sin(t*7f))*.18f:0f;
-            float knock="knocking".equals(expression)?Math.max(0f,(float)Math.sin(t*8f)):0f;
-
-            // Hair behind the head and body.
-            part(0,0.70f,0.05f,0.78f,0.90f,0.42f,sway,0.78f,0.75f,0.90f,1);
-            part(0,-0.45f,0.02f,0.48f+breathe,0.66f+breathe,0.31f,sway*0.35f,0.12f,0.10f,0.18f,1);
-            // Maid apron and skirt.
-            part(0,-0.35f,0.30f,0.34f,0.50f,0.12f,sway*0.35f,0.94f,0.94f,0.98f,1);
-            part(0,-0.87f,0.02f,0.68f,0.42f,0.40f,sway*0.25f,0.10f,0.08f,0.15f,1);
-            // Legs and shoes.
-            part(-0.22f,-1.34f,0.02f,0.13f,0.42f,0.13f,-sway*0.15f,0.88f,0.88f,0.94f,1);
-            part(0.22f,-1.34f,0.02f,0.13f,0.42f,0.13f,sway*0.15f,0.88f,0.88f,0.94f,1);
-            part(-0.22f,-1.63f,0.10f,0.18f,0.12f,0.28f,0,0.08f,0.06f,0.10f,1);
-            part(0.22f,-1.63f,0.10f,0.18f,0.12f,0.28f,0,0.08f,0.06f,0.10f,1);
-            // Arms with a gentle idle swing.
-            part(-0.50f,-0.42f,0.03f+knock*.42f,0.13f,0.48f,0.13f,12+sway-knock*28f,0.96f,0.83f,0.82f,1);
-            part(0.50f,-0.42f,0.03f+knock*.42f,0.13f,0.48f,0.13f,-12-sway+knock*28f,0.96f,0.83f,0.82f,1);
-            // Face and silver hair cap.
-            part(0,0.72f-sneeze,0.33f+sneeze,0.67f,0.70f,0.53f,sway,0.98f,0.86f,0.84f,1);
-            part(0,1.03f-sneeze,0.15f+sneeze,0.72f,0.48f,0.50f,sway,0.86f,0.84f,0.94f,1);
-            // Cat ears.
-            pyramid(-0.40f,1.43f,0.16f,0.30f,0.42f,0.22f,sway-5,0.82f,0.80f,0.91f,1);
-            pyramid(0.40f,1.43f,0.16f,0.30f,0.42f,0.22f,sway+5,0.82f,0.80f,0.91f,1);
-            // Violet eyes, blink by scaling vertically.
-            part(-0.24f,0.79f,0.80f,0.11f,0.14f*blink,0.045f,sway,0.47f,0.20f,0.85f,1);
-            part(0.24f,0.79f,0.80f,0.11f,0.14f*blink,0.045f,sway,0.47f,0.20f,0.85f,1);
-            // Mouth / lip sync.
-            part(0,0.48f,0.82f,0.08f,talk,0.035f,sway,0.48f,0.12f,0.22f,1);
-            // Tail: animated chain of rounded segments.
-            for(int i=0;i<5;i++){
-                float a=t*1.5f+i*0.45f;
-                float x=0.58f+i*0.17f+(float)Math.sin(a)*0.05f;
-                float y=-0.72f+i*0.12f+(float)Math.cos(a)*0.04f;
-                part(x,y,-0.12f,0.19f,0.22f,0.16f,sway,0.82f,0.80f,0.90f,1);
+        private void legs(boolean small,float sway){
+            float x=small?.18f:.22f,y=small?-1.12f:-1.55f,len=small?.3f:.55f;
+            draw(small?limb:leg,-x,y,.02f,small?.12f:.15f,len,.13f,0,0,-sway,STOCK);
+            draw(small?limb:leg,x,y,.02f,small?.12f:.15f,len,.13f,0,0,sway,STOCK);
+            float sy=small?-1.38f:-2.08f;
+            oval(-x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
+            oval(x,sy,.12f,.17f,.10f,.27f,0,0,0,SHOE);
+        }
+        private void arms(boolean small,float sway,float knock,float wave){
+            float x=small?.53f:.45f, wristY=small?-.62f:-.77f;
+            for(int side=-1;side<=1;side+=2){
+                float ax=side*x, handX=side*(small?.71f:.66f), thrust=knock*.31f;
+                float gesture=side>0&&"wave".equals(expression)?-.24f:0;
+                if(!small)oval(ax,.035f,.025f,.15f,.14f,.15f,0,0,side*12,DRESS);
+                draw(limb,ax,-.18f+gesture*.35f,.015f,small?.15f:.12f,small?.22f:.25f,.13f,0,0,side*-8+sway,DRESS);
+                oval(ax,-.40f+gesture*.35f,.07f,.10f,.045f,.11f,0,0,0,WHITE);
+                draw(limb,side*(x+.10f),-.57f+gesture,.09f+thrust,.083f,small?.22f:.21f,.083f,0,0,side*-11+sway,DRESS);
+                oval(handX,wristY+gesture,.15f+thrust,.095f,.045f,.09f,0,0,0,WHITE);
+                oval(handX,wristY-.10f+gesture,.18f+thrust,.092f,.12f,.045f,0,0,side*-5,SKIN);
+                for(int finger=0;finger<4;finger++){
+                    float fx=handX+(finger-1.5f)*.037f;
+                    oval(fx,wristY-.20f+gesture+(finger==0||finger==3?.014f:0),.20f+thrust,
+                        .018f,.068f,.022f,0,0,side*-4,SKIN);
+                }
+                oval(handX-side*.10f,wristY-.11f+gesture,.19f+thrust,.028f,.055f,.028f,0,0,side*35,SKIN);
             }
         }
-
-        private void part(float x,float y,float z,float sx,float sy,float sz,float rz,float r,float g,float b,float a){
-            draw(sphere,x,y,z,sx,sy,sz,rz,r,g,b,a);
-        }
-        private void pyramid(float x,float y,float z,float sx,float sy,float sz,float rz,float r,float g,float b,float a){
-            draw(ear,x,y,z,sx,sy,sz,rz,r,g,b,a);
-        }
-        private void draw(Mesh mesh,float x,float y,float z,float sx,float sy,float sz,float rz,float r,float g,float b,float a){
-            Matrix.setIdentityM(model,0);
-            Matrix.rotateM(model,0,userYaw,0,1,0);
-            float bodyScale=chibi?.84f:1f;
-            Matrix.translateM(model,0,x*bodyScale,y*bodyScale+(chibi?.18f:0f),z*bodyScale);
-            Matrix.rotateM(model,0,rz,0,1,0);
-            float headBoost=chibi&&y>.25f?1.22f:1f;
-            Matrix.scaleM(model,0,sx*bodyScale*headBoost,sy*bodyScale*headBoost,sz*bodyScale*headBoost);
-            Matrix.multiplyMM(temp,0,view,0,model,0);
-            Matrix.multiplyMM(mvp,0,projection,0,temp,0);
-            GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
-            GLES20.glUniform4f(colorHandle,r,g,b,a);
-            mesh.draw(position);
-        }
-
-        private static int link(String vs,String fs){
-            int v=compile(GLES20.GL_VERTEX_SHADER,vs), f=compile(GLES20.GL_FRAGMENT_SHADER,fs);
-            int p=GLES20.glCreateProgram(); GLES20.glAttachShader(p,v); GLES20.glAttachShader(p,f); GLES20.glLinkProgram(p); return p;
-        }
-        private static int compile(int type,String source){
-            int s=GLES20.glCreateShader(type); GLES20.glShaderSource(s,source); GLES20.glCompileShader(s); return s;
-        }
-    }
-
-    private static final class Mesh {
-        final FloatBuffer vertices; final ShortBuffer indices; final int count;
-        Mesh(float[] v,short[] i){
-            vertices=ByteBuffer.allocateDirect(v.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer(); vertices.put(v).position(0);
-            indices=ByteBuffer.allocateDirect(i.length*2).order(ByteOrder.nativeOrder()).asShortBuffer(); indices.put(i).position(0); count=i.length;
-        }
-        void draw(int position){
-            vertices.position(0); indices.position(0);
-            GLES20.glEnableVertexAttribArray(position);
-            GLES20.glVertexAttribPointer(position,3,GLES20.GL_FLOAT,false,12,vertices);
-            GLES20.glDrawElements(GLES20.GL_TRIANGLES,count,GLES20.GL_UNSIGNED_SHORT,indices);
-            GLES20.glDisableVertexAttribArray(position);
-        }
-        static Mesh sphere(int stacks,int slices){
-            float[] v=new float[(stacks+1)*(slices+1)*3]; int k=0;
-            for(int i=0;i<=stacks;i++){
-                double phi=Math.PI*i/stacks;
-                for(int j=0;j<=slices;j++){
-                    double th=2*Math.PI*j/slices;
-                    v[k++]=(float)(Math.sin(phi)*Math.cos(th)); v[k++]=(float)Math.cos(phi); v[k++]=(float)(Math.sin(phi)*Math.sin(th));
+        private void head(boolean small,float y,float hx,float hz,float blink,float mouth,float sneeze,float tilt,float ears){
+            float eyeX=small?.25f:.17f, ey=small?.57f:.77f;
+            float faceZ=small?.56f:.525f;
+            if(!small)draw(face,0,y+.025f,-.055f,hx*1.13f,.51f,hz*1.2f,0,0,tilt,SILVER);
+            draw(small?ball:face,0,y-sneeze*.06f,.23f+sneeze*.1f,hx,small?.61f:.44f,hz,sneeze*10,0,tilt,SKIN);
+            if(!small) oval(0,.32f,.16f,.10f,.14f,.10f,0,0,0,SKIN);
+            oval(0,y+(small?.36f:.39f),.015f,hx*1.08f,small?.38f:.15f,hz*.96f,0,0,tilt,SILVER);
+            // Layers of hair frame the face, move slightly, and remain attached when turning.
+            oval(-hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,-15+hairMotion*.25f,SILVER);
+            oval(hx*.72f,y+.12f,.15f,small?.14f:.085f,small?.41f:.30f,.10f,0,0,15+hairMotion*.25f,SILVER);
+            if(small){
+                oval(-hx*.35f,y+.24f,.52f,hx*.26f,.19f,.055f,0,0,-19+tilt,SILVER);
+                oval(hx*.35f,y+.24f,.52f,hx*.26f,.19f,.055f,0,0,19+tilt,SILVER);
+            }else{
+                for(int i=-2;i<=2;i++){
+                    draw(hairLock,i*.11f,y+.33f,.485f,.062f,.15f,.040f,0,0,-i*8+tilt,
+                        i%2==0?SILVER:HIGHLIGHT);
+                }
+                for(int side=-1;side<=1;side+=2){
+                    draw(hairLock,side*.36f,y-.14f,.39f,.073f,.54f,.085f,0,0,side*(5+hairMotion*.22f),SILVER);
+                    draw(hairLock,side*.32f,y-.19f,.47f,.038f,.43f,.043f,0,0,side*9,HIGHLIGHT);
                 }
             }
-            short[] ix=new short[stacks*slices*6]; k=0;
-            for(int i=0;i<stacks;i++) for(int j=0;j<slices;j++){
-                short a=(short)(i*(slices+1)+j), b=(short)(a+slices+1);
-                ix[k++]=a;ix[k++]=b;ix[k++]=(short)(a+1);ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(b+1);
+            float ex=small?.39f:.27f, eyear=small?1.33f:1.29f;
+            for(int side=-1;side<=1;side+=2){
+                // Rounded ears begin inside the hair cap, without a hard triangular seam.
+                draw(ear,side*ex,eyear,.07f,small?.31f:.22f,small?.33f:.25f,.15f,0,0,side*(7+ears)+tilt,SILVER);
+                draw(ear,side*ex,eyear+.015f,.205f,small?.22f:.15f,small?.245f:.175f,.035f,0,0,side*(7+ears)+tilt,PINK);
+            }
+            float eyeW=small?.14f:.105f, eyeH=small?.085f:.070f;
+            oval(-eyeX,ey,faceZ,eyeW,eyeH*blink,.022f,0,0,tilt,WHITE);
+            oval(eyeX,ey,faceZ,eyeW,eyeH*blink,.022f,0,0,tilt,WHITE);
+            if(blink>.18f){
+                oval(-eyeX,ey,faceZ+.02f,eyeW*.60f,eyeH*.95f,.018f,0,0,tilt,EYE);
+                oval(eyeX,ey,faceZ+.02f,eyeW*.60f,eyeH*.95f,.018f,0,0,tilt,EYE);
+                oval(-eyeX,ey,faceZ+.039f,eyeW*.18f,eyeH*.71f,.012f,0,0,tilt,DRESS);
+                oval(eyeX,ey,faceZ+.039f,eyeW*.18f,eyeH*.71f,.012f,0,0,tilt,DRESS);
+                oval(-eyeX-.025f,ey+.027f,faceZ+.053f,.021f,.025f,.009f,0,0,tilt,WHITE);
+                oval(eyeX-.025f,ey+.027f,faceZ+.053f,.021f,.025f,.009f,0,0,tilt,WHITE);
+            }
+            oval(-eyeX,ey+eyeH*.9f,faceZ+.018f,eyeW*1.02f,.017f,.016f,0,0,-8+tilt,DRESS);
+            oval(eyeX,ey+eyeH*.9f,faceZ+.018f,eyeW*1.02f,.017f,.016f,0,0,8+tilt,DRESS);
+            oval(-eyeX,ey+.13f,faceZ-.025f,eyeW*.8f,.018f,.018f,0,0,-8+tilt,DARK);
+            oval(eyeX,ey+.13f,faceZ-.025f,eyeW*.8f,.018f,.018f,0,0,8+tilt,DARK);
+            if(!small){
+                oval(-.245f,ey-.14f,faceZ-.01f,.055f,.025f,.008f,0,0,-10,PINK);
+                oval(.245f,ey-.14f,faceZ-.01f,.055f,.025f,.008f,0,0,10,PINK);
+            }
+            oval(0,ey-.15f,faceZ+.025f,.022f,.027f,.018f,0,0,0,SKIN);
+            oval(0,ey-.25f,faceZ+.035f,.050f,mouth*.55f,.012f,0,0,tilt,MOUTH);
+            oval(0,eyear-.2f,-.02f,small?.63f:.42f,.065f,small?.4f:.28f,0,0,tilt,WHITE);
+        }
+        private void tail(float t,boolean small,float sway){
+            float x=small?.49f:.57f,y=small?-.68f:-.78f;
+            draw(tailMesh,x,y,-.31f,small?.77f:.94f,small?.73f:.88f,1f,0,0,sway+(float)Math.sin(t*1.25f)*10f,SILVER);
+        }
+        private void oval(float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){draw(ball,x,y,z,sx,sy,sz,rx,ry,rz,c);}private void cone(float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){draw(cone,x,y,z,sx,sy,sz,rx,ry,rz,c);}
+        private void draw(Mesh mesh,float x,float y,float z,float sx,float sy,float sz,float rx,float ry,float rz,float[] c){Matrix.setIdentityM(model,0);Matrix.rotateM(model,0,yaw,0,1,0);Matrix.rotateM(model,0,pitch,1,0,0);Matrix.translateM(model,0,0,poseY,0);Matrix.rotateM(model,0,poseX,1,0,0);Matrix.rotateM(model,0,poseZ,0,0,1);Matrix.translateM(model,0,x,y,z);Matrix.rotateM(model,0,rx,1,0,0);Matrix.rotateM(model,0,ry,0,1,0);Matrix.rotateM(model,0,rz,0,0,1);GLES20.glUniformMatrix4fv(normalMatrix,1,false,model,0);Matrix.scaleM(model,0,sx,sy,sz);Matrix.multiplyMM(tmp,0,view,0,model,0);Matrix.multiplyMM(out,0,proj,0,tmp,0);GLES20.glUniformMatrix4fv(mvp,1,false,out,0);GLES20.glUniform4f(color,c[0],c[1],c[2],c[3]);mesh.draw(pos,norm);}
+        private static int link(String a,String b){int x=compile(GLES20.GL_VERTEX_SHADER,a),y=compile(GLES20.GL_FRAGMENT_SHADER,b),p=GLES20.glCreateProgram();GLES20.glAttachShader(p,x);GLES20.glAttachShader(p,y);GLES20.glLinkProgram(p);return p;}private static int compile(int t,String s){int x=GLES20.glCreateShader(t);GLES20.glShaderSource(x,s);GLES20.glCompileShader(x);return x;}
+    }
+    private static final class Mesh {
+        final FloatBuffer v,normals;final ShortBuffer i;final int n;
+        Mesh(float[]a,short[]b){this(a,b,0,0);}
+        Mesh(float[]a,short[]b,int surface){this(a,b,surface,0);}
+        Mesh(float[]a,short[]b,int surface,int sides){
+            v=ByteBuffer.allocateDirect(a.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();v.put(a).position(0);
+            float[]ns=new float[a.length];
+            for(int j=0;j<a.length;j+=3){
+                float x=surface==2?0:a[j],y=surface==0?a[j+1]:0,z=surface==2?1:a[j+2];
+                if(surface==1||surface==3)y=0;
+                if(surface==1&&sides>0){
+                    int ring=j/3/(sides+1),column=j/3%(sides+1),rings=a.length/3/(sides+1);
+                    int prev=Math.max(0,ring-1)*(sides+1)*3+column*3;
+                    int next=Math.min(rings-1,ring+1)*(sides+1)*3+column*3;
+                    float dy=a[prev+1]-a[next+1];
+                    float dx=dy==0?0:(a[prev]-a[next])/dy;
+                    float dz=dy==0?0:(a[prev+2]-a[next+2])/dy;
+                    float radius=(float)Math.sqrt(x*x+z*z);
+                    if(radius>.0001f){x/=radius;z/=radius;y=-(x*dx+z*dz);}
+                }
+                float length=(float)Math.sqrt(x*x+y*y+z*z);
+                if(length<.0001f){x=0;y=1;z=0;length=1;}
+                ns[j]=x/length;ns[j+1]=y/length;ns[j+2]=z/length;
+            }
+            normals=ByteBuffer.allocateDirect(ns.length*4).order(ByteOrder.nativeOrder()).asFloatBuffer();normals.put(ns).position(0);
+            i=ByteBuffer.allocateDirect(b.length*2).order(ByteOrder.nativeOrder()).asShortBuffer();i.put(b).position(0);n=b.length;
+        }
+        void draw(int p,int normal){v.position(0);normals.position(0);i.position(0);GLES20.glEnableVertexAttribArray(p);GLES20.glVertexAttribPointer(p,3,GLES20.GL_FLOAT,false,12,v);GLES20.glEnableVertexAttribArray(normal);GLES20.glVertexAttribPointer(normal,3,GLES20.GL_FLOAT,false,12,normals);GLES20.glDrawElements(GLES20.GL_TRIANGLES,n,GLES20.GL_UNSIGNED_SHORT,i);GLES20.glDisableVertexAttribArray(normal);GLES20.glDisableVertexAttribArray(p);}
+        static Mesh sphere(int a,int b){float[]v=new float[(a+1)*(b+1)*3];int k=0;for(int x=0;x<=a;x++){double q=Math.PI*x/a;for(int y=0;y<=b;y++){double r=2*Math.PI*y/b;v[k++]=(float)(Math.sin(q)*Math.cos(r));v[k++]=(float)Math.cos(q);v[k++]=(float)(Math.sin(q)*Math.sin(r));}}short[]z=new short[a*b*6];k=0;for(int x=0;x<a;x++)for(int y=0;y<b;y++){short u=(short)(x*(b+1)+y),w=(short)(u+b+1);z[k++]=u;z[k++]=(short)(u+1);z[k++]=w;z[k++]=(short)(w+1);z[k++]=w;z[k++]=(short)(u+1);}return new Mesh(v,z);}
+        static Mesh catEar(){
+            // A closed, softly curved ear: broad root, rounded tip, and convex surfaces.
+            float[] widths={.77f,.98f,.96f,.81f,.61f,.39f,.18f,.045f};
+            int rings=widths.length,sides=20,k=0;float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++)for(int s=0;s<=sides;s++){
+                double a=2*Math.PI*s/sides;float h=r/(float)(rings-1);
+                v[k++]=(float)Math.cos(a)*widths[r];v[k++]=-1f+2f*h;
+                v[k++]=(float)Math.sin(a)*(.62f*(1f-h)+.12f)*widths[r]+.10f*h;
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){
+                short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);
+                ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;
+                ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;
+            }
+            return new Mesh(v,ix,1);
+        }
+        static Mesh tail(){
+            // One continuous tapered curve instead of overlapping spherical segments.
+            int rings=20,sides=16,k=0;float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++)for(int s=0;s<=sides;s++){
+                float t=r/(float)(rings-1),radius=(.12f-.055f*t)*(r==rings-1?.22f:1f);
+                double a=2*Math.PI*s/sides;float tangentX=1f,tangentY=.43f+.65f*t;
+                float length=(float)Math.sqrt(tangentX*tangentX+tangentY*tangentY);
+                v[k++]=t-(float)Math.sin(a)*radius*tangentY/length;
+                v[k++]=.43f*t+.325f*t*t+(float)Math.sin(a)*radius*tangentX/length;
+                v[k++]=(float)Math.cos(a)*radius;
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){
+                short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);
+                ix[k++]=a;ix[k++]=b;ix[k++]=(short)(a+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(b+1);
             }
             return new Mesh(v,ix);
         }
-        static Mesh pyramid(){
-            float[] v={0,1,0,-1,-1,1,1,-1,1,1,-1,-1,-1,-1,-1};
-            short[] i={0,1,2,0,2,3,0,3,4,0,4,1,1,4,3,1,3,2}; return new Mesh(v,i);
+        static float smooth(float[] p,float at){
+            int i=Math.min(p.length-2,(int)at);float t=at-i;
+            float before=p[Math.max(0,i-1)],a=p[i],b=p[i+1],after=p[Math.min(p.length-1,i+2)];
+            return a+.5f*t*(b-before+t*(2*before-5*a+4*b-after+t*(3*(a-b)+after-before)));
         }
+        static Mesh loft(float[] widths,float[] depths,float[] heights,int sides){
+            int subdivisions=4,rings=(widths.length-1)*subdivisions+1,k=0;
+            float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++){
+                float at=r/(float)subdivisions,w=smooth(widths,at),d=smooth(depths,at);
+                float y=heights==null?1f-2f*r/(rings-1f):smooth(heights,at);
+                for(int s=0;s<=sides;s++){double angle=2*Math.PI*s/sides;
+                    v[k++]=(float)Math.cos(angle)*w;v[k++]=y;v[k++]=(float)Math.sin(angle)*d;
+                }
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int s=0;s<sides;s++){
+                short a=(short)(r*(sides+1)+s),b=(short)(a+sides+1);
+                ix[k++]=a;ix[k++]=(short)(a+1);ix[k++]=b;
+                ix[k++]=(short)(a+1);ix[k++]=(short)(b+1);ix[k++]=b;
+            }
+            return new Mesh(v,ix,1,sides);
+        }
+        static Mesh profile(float[] radii,int sides){return loft(radii,radii,null,sides);}
+        static Mesh faceProfile(int sides){
+            // Rounded forehead and cheeks narrow gradually into a jaw and chin.
+            float[] ys={1f,.82f,.43f,.05f,-.43f,-.78f,-1f};
+            float[] widths={.38f,.78f,.98f,1f,.88f,.62f,.27f};
+            float[] depths={.48f,.8f,.96f,1f,.9f,.7f,.42f};
+            return loft(widths,depths,ys,sides);
+        }
+        static Mesh bodyProfile(int sides){
+            // Shoulder, waist and hip contours; depth differs from width at each ring.
+            float[]width={.24f,.65f,.92f,1f,.94f,.82f,.72f,.78f,.86f};
+            float[]depth={.45f,.65f,.80f,.87f,.88f,.78f,.70f,.78f,.90f};
+            return loft(width,depth,null,sides);
+        }
+        static Mesh frill(){
+            int sides=64,rings=3,k=0;float[]v=new float[rings*(sides+1)*3];
+            for(int r=0;r<rings;r++)for(int a=0;a<=sides;a++){
+                double angle=2*Math.PI*a/sides;
+                float wave=(float)Math.cos(16*angle);
+                float radius=(r==0?1.12f:r==1?1.18f:1.19f)+(r==2?.045f*wave:0);
+                v[k++]=(float)Math.cos(angle)*radius;
+                v[k++]=r==0?1f:r==1?.13f:-.72f+.24f*wave;
+                v[k++]=(float)Math.sin(angle)*radius;
+            }
+            short[]ix=new short[(rings-1)*sides*6];k=0;
+            for(int r=0;r<rings-1;r++)for(int a=0;a<sides;a++){
+                short top=(short)(r*(sides+1)+a),bottom=(short)(top+sides+1);
+                ix[k++]=top;ix[k++]=(short)(top+1);ix[k++]=bottom;
+                ix[k++]=(short)(top+1);ix[k++]=(short)(bottom+1);ix[k++]=bottom;
+            }
+            return new Mesh(v,ix,1);
+        }
+        static Mesh apronSkirt(){
+            // The apron follows the skirt's curved front instead of floating as a flat rectangle.
+            int rows=12,cols=24,k=0;
+            float[]v=new float[(rows+1)*(cols+1)*3];
+            for(int y=0;y<=rows;y++)for(int x=0;x<=cols;x++){
+                float down=y/(float)rows;
+                double angle=(x/(double)cols-.5)*1.43;
+                float radius=.82f+.46f*down;
+                float fold=(float)Math.sin(angle*13)*.012f*down;
+                v[k++]=(float)Math.sin(angle)*radius;
+                v[k++]=1f-2f*down;
+                v[k++]=(float)Math.cos(angle)*(radius*.99f+fold)+.09f;
+            }
+            short[]ix=new short[rows*cols*12];k=0;
+            for(int y=0;y<rows;y++)for(int x=0;x<cols;x++){
+                short a=(short)(y*(cols+1)+x),b=(short)(a+cols+1);
+                ix[k++]=a;ix[k++]=b;ix[k++]=(short)(a+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(b+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=a;
+                ix[k++]=(short)(b+1);ix[k++]=b;ix[k++]=(short)(a+1);
+            }
+            return new Mesh(v,ix,3);
+        }
+        static Mesh panel(){
+            // A curved, double-sided fabric panel instead of a spherical apron.
+            int rows=8, cols=10;float[]v=new float[(rows+1)*(cols+1)*3];int k=0;
+            for(int y=0;y<=rows;y++)for(int x=0;x<=cols;x++){
+                float a=2f*x/cols-1f,b=1f-2f*y/rows;
+                v[k++]=a*(.95f-.07f*b);v[k++]=b;v[k++]=.26f*(1f-a*a);
+            }
+            short[]ix=new short[rows*cols*12];k=0;
+            for(int y=0;y<rows;y++)for(int x=0;x<cols;x++){
+                short a=(short)(y*(cols+1)+x),b=(short)(a+cols+1);
+                ix[k++]=a;ix[k++]=b;ix[k++]=(short)(a+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=(short)(b+1);
+                ix[k++]=(short)(a+1);ix[k++]=b;ix[k++]=a;
+                ix[k++]=(short)(b+1);ix[k++]=b;ix[k++]=(short)(a+1);
+            }
+            return new Mesh(v,ix,2);
+        }
+        static Mesh cone(){float[]v={0,1,0,-1,-1,1,1,-1,1,1,-1,-1,-1,-1,-1};short[]i={0,1,2,0,2,3,0,3,4,0,4,1,1,4,3,1,3,2};return new Mesh(v,i);}
     }
 }

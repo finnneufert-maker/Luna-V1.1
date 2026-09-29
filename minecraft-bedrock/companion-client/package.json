@@ -1,0 +1,10 @@
+{
+  "name": "luna-bedrock-companion",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Experimental Luna Bedrock LAN chat client",
+  "main": "index.js",
+  "scripts": { "start": "node index.js", "test": "node --test" },
+  "engines": { "node": ">=24" },
+  "dependencies": { "bedrock-protocol": "3.60.1" }
+}
