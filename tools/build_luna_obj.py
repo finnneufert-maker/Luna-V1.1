@@ -99,9 +99,10 @@ def tube(obj,name,mat,points,radii,sides=10):
 def hair_ribbon(obj,name,mat,x,tip,lean=0):
     # A layered, tapered lock follows the scalp and falls across the forehead.
     # A thin ribbon keeps the fringe smooth instead of looking like linked beads.
-    path=[(x*.72,1.18,-.02,.070),(x*.82,1.16,.17,.086),
-          (x*.94,1.10,.33,.091),(x+lean*.4,1.04,.44,.082),
-          (x+lean*.8,.98,.505,.067),(x+lean,tip,.524,.003)]
+    offset=.015*sin(x*31)
+    path=[(x*.72,1.18,-.02,.063),(x*.82,1.15+offset,.17,.074),
+          (x*.94,1.09+offset,.33,.078),(x+lean*.4,1.035+offset,.44,.067),
+          (x+lean*.8,.975+offset,.505,.050),(x+lean,tip,.524,.003)]
     vertices=[]
     for px,py,pz,width in path:
         for front in (False,True):
@@ -133,8 +134,15 @@ def build(chibi=False):
     # A narrowed jaw and continuous back of head, with silver hair behind it.
     ellipsoid(o,'hair_shell','hair',0,.69*s,-.055*s,.53 if chibi else .39*s,.49*s,.37*s)
     loft(o,'face','skin',[(1.11*s,.17*s,.12*s,.14*s),(1.01*s,.28*s,.20*s,.17*s),(.85*s,.32*s,.27*s,.20*s),(.65*s,.33*s,.29*s,.20*s),(.46*s,.29*s,.24*s,.18*s),(.32*s,.20*s,.16*s,.15*s),(.27*s,.08*s,.08*s,.14*s)] if not chibi else [(1.11,.20,.13,.15),(1.00,.36,.23,.18),(.82,.44,.31,.20),(.63,.46,.33,.20),(.45,.42,.27,.18),(.33,.28,.18,.16),(.29,.10,.09,.14)])
+    # A visible neck joins the chin to the shoulder line in profile.
+    ellipsoid(o,'neck','skin',0,.235,.045,.105,.17,.112)
     for side in (-1,1):
         cat_ear(o,side,1,chibi)
+        # Narrow ribbons tie the cat ears into the hair rather than floating above it.
+        for bow_side in (-1,1):
+            o.mesh('ear_bow_'+str(side)+'_'+str(bow_side),'purple',
+                   [(side*.30,1.095,.16),(side*.30+bow_side*.105,1.145,.16),
+                    (side*.30+bow_side*.10,1.04,.17)],[(0,1,2)])
         eyeX=.19 if not chibi else .27;eyeY=.75 if not chibi else .73
         eyeDepth=.055 if chibi else 0
         ellipsoid(o,'eye_white_'+str(side),'white',side*eyeX,eyeY,.482+eyeDepth,.107,.071,.020)
@@ -193,6 +201,15 @@ def build(chibi=False):
         for j in range(cols):
             a=i*(cols+1)+j;b=a+1;c=a+cols+1;d=c+1;faces.extend(((a,c,b),(b,c,d)))
     o.mesh('apron','apron',verts,faces)
+    for side in (-1,1):
+        edge=[]
+        for i in range(19):
+            t=i/18;y=.025-1.14*t;w=.22+.30*t;depth=.23+.27*t
+            edge.append((side*w*sin(.70),y,depth*cos(.70)+.025))
+        tube(o,'apron_frill_'+str(side),'apron',edge,
+             [.020+.012*sin(pi*i/3)**2 for i in range(19)],8)
+    tube(o,'apron_top_trim','apron',[(x,.07,.25) for x in (-.22,-.11,0,.11,.22)],
+         [.025,.037,.040,.037,.025],10)
     for side in (-1,1):
         tube(o,'apron_strap_'+str(side),'apron',
              [(side*.21,.18,.17),(side*.24,.04,.235),(side*.25,-.18,.29),(side*.23,-.37,.315)],
